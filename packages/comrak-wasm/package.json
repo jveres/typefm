@@ -1,13 +1,17 @@
 {
 	"name": "@typefm/comrak-wasm",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "WebAssembly bindings for comrak — a fast CommonMark + GFM Markdown parser and renderer",
 	"license": "MIT",
 	"type": "module",
 	"main": "pkg/comrak.js",
 	"types": "types.d.ts",
+	"bin": {
+		"comrak": "examples/md.ts"
+	},
 	"files": [
 		"pkg/",
+		"examples/md.ts",
 		"types.d.ts",
 		"LICENSE",
 		"README.md"
@@ -29,7 +33,11 @@
 		"ansi",
 		"typst"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
+		"prepack": "npm run build",
 		"build": "cargo build --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-name comrak --out-dir pkg ../../target/wasm32-unknown-unknown/release/comrak_wasm.wasm && mv pkg/comrak_bg.wasm pkg/comrak.wasm && mv pkg/comrak_bg.wasm.d.ts pkg/comrak.wasm.d.ts && sed -i '' 's/comrak_bg\\.wasm/comrak.wasm/g' pkg/comrak.js pkg/comrak.d.ts pkg/comrak.wasm.d.ts",
 		"check": "biome check .",
 		"check:fix": "biome check --write .",
