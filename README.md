@@ -1,6 +1,6 @@
 # typefm
 
-Monorepo for typefm packages.
+Monorepo for [type.fm](https://type.fm)
 
 ## Packages
 
