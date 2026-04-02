@@ -12,7 +12,7 @@ const args = process.argv.slice(2);
 let format = "ansi";
 let showMarkdown = false;
 let noShadow = false;
-let filePath: string | undefined;
+let filePath;
 
 for (const arg of args) {
 	if (arg === "--text" || arg === "-t") {
@@ -40,10 +40,10 @@ for (const arg of args) {
 	}
 }
 
-let md: string;
+let md;
 
 if (!filePath || filePath === "-") {
-	const chunks: Buffer[] = [];
+	const chunks = [];
 	for await (const chunk of process.stdin) {
 		chunks.push(chunk);
 	}

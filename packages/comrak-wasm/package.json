@@ -1,17 +1,17 @@
 {
 	"name": "@typefm/comrak-wasm",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "WebAssembly bindings for comrak — a fast CommonMark + GFM Markdown parser and renderer",
 	"license": "MIT",
 	"type": "module",
 	"main": "pkg/comrak.js",
 	"types": "types.d.ts",
 	"bin": {
-		"comrak": "examples/md.ts"
+		"comrak": "examples/md.mjs"
 	},
 	"files": [
 		"pkg/",
-		"examples/md.ts",
+		"examples/md.mjs",
 		"types.d.ts",
 		"LICENSE",
 		"README.md"
@@ -45,7 +45,7 @@
 		"test": "vitest run",
 		"shiki": "cd examples/shiki && npm install && npm start",
 		"dev": "vite examples/playground",
-		"md": "node examples/md.ts"
+		"md": "node examples/md.mjs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.10",

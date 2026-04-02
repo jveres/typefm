@@ -254,27 +254,33 @@ Handles: code fences, bold, italic, strikethrough, inline code, links/images, Ka
 
 ## CLI
 
-Render markdown files in the terminal:
+Render markdown in the terminal via `npx`:
 
 ````bash
 # ANSI colored output (default)
-npm run md -- README.md
+npx @typefm/comrak-wasm README.md
 
 # Plain text output
-npm run md -- --text README.md
+npx @typefm/comrak-wasm --text README.md
 
 # Show markdown markers (#, ```, **, etc.)
-npm run md -- --markdown README.md
+npx @typefm/comrak-wasm --markdown README.md
 
 # Disable table shadow
-npm run md -- --no-shadow README.md
+npx @typefm/comrak-wasm --no-shadow README.md
 
 # Read from stdin
-echo "# Hello **world**" | npm run md -- -
+echo "# Hello **world**" | npx @typefm/comrak-wasm -
 
 # Combine options
-npm run md -- -t -m --no-shadow README.md
+npx @typefm/comrak-wasm -t -m --no-shadow README.md
 ````
+
+Or if installed globally / in a project, use the `comrak` command directly:
+
+```bash
+comrak README.md
+```
 
 ## Playground
 
