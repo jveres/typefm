@@ -1,13 +1,13 @@
 {
 	"name": "@typefm/comrak-wasm",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "WebAssembly bindings for comrak — a fast CommonMark + GFM Markdown parser and renderer",
 	"license": "MIT",
 	"type": "module",
 	"main": "pkg/comrak.js",
 	"types": "types.d.ts",
 	"bin": {
-		"comrak": "examples/md.mjs"
+		"comrak-wasm": "examples/md.mjs"
 	},
 	"files": [
 		"pkg/",
