@@ -2,7 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
-import { initSync, mdToAnsi, mdToText } from "../pkg/comrak.js";
+import { initSync, mdToAnsi, mdToText, ansiThemeDark, ansiThemeLight } from "../pkg/comrak.js";
 
 const require = createRequire(import.meta.url);
 const wasmPath = require.resolve("../pkg/comrak.wasm");
@@ -10,6 +10,7 @@ initSync({ module: await readFile(wasmPath) });
 
 const args = process.argv.slice(2);
 let format = "ansi";
+let theme = "dark";
 let showMarkdown = false;
 let noShadow = false;
 let filePath;
@@ -19,6 +20,10 @@ for (const arg of args) {
 		format = "text";
 	} else if (arg === "--ansi" || arg === "-a") {
 		format = "ansi";
+	} else if (arg === "--dark") {
+		theme = "dark";
+	} else if (arg === "--light") {
+		theme = "light";
 	} else if (arg === "--markdown" || arg === "-m") {
 		showMarkdown = true;
 	} else if (arg === "--no-shadow") {
@@ -29,6 +34,8 @@ for (const arg of args) {
 		console.log("Options:");
 		console.log("  -a, --ansi       ANSI colored output (default)");
 		console.log("  -t, --text       Plain text output");
+		console.log("      --dark       Dark ANSI theme (default)");
+		console.log("      --light      Light ANSI theme");
 		console.log("  -m, --markdown   Show markdown markers (#, ```, **, *, `)");
 		console.log("      --no-shadow  Disable table shadow");
 		console.log("  -h, --help       Show help");
@@ -81,5 +88,6 @@ const shadow = noShadow ? undefined : "░";
 if (format === "text") {
 	console.log(mdToText(md, opts, true, showMarkdown, shadow));
 } else {
-	console.log(mdToAnsi(md, opts, { showMarkdown, tableShadow: shadow }));
+	const base = theme === "light" ? ansiThemeLight() : ansiThemeDark();
+	console.log(mdToAnsi(md, opts, { ...base, showMarkdown, tableShadow: shadow }));
 }
