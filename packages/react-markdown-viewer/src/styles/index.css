@@ -1,0 +1,17 @@
+/**
+ * React Markdown Viewer - Combined Styles
+ * 
+ * This is the main entry point that imports all component styles.
+ * Import this single file to get complete styling for the viewer.
+ * 
+ * Individual imports available for tree-shaking:
+ *   - viewer.css  : Core markdown rendering styles
+ *   - alerts.css  : GitHub-style alert boxes
+ *   - katex.css   : Math/LaTeX rendering
+ *   - hljs.css    : Syntax highlighting theme
+ */
+
+@import './viewer.css';
+@import './alerts.css';
+@import './katex.css';
+@import './hljs.css';

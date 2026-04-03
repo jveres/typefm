@@ -988,6 +988,26 @@ describe("heal", () => {
 		const html = mdToHtml(healed, {});
 		expect(html).toContain("<strong>bold</strong>");
 	});
+
+	test("handles ZWSP (U+200B) without crashing", () => {
+		expect(healMarkdown("Text\u200Bwith\u200BZWSP")).toBe("Text\u200Bwith\u200BZWSP");
+	});
+
+	test("handles ZWSP with unclosed bold", () => {
+		expect(healMarkdown("**bold\u200Btext")).toBe("**bold\u200Btext**");
+	});
+
+	test("handles ZWSP with unclosed link", () => {
+		expect(healMarkdown("[link\u200Btext](url")).toBe("[link\u200Btext](url)");
+	});
+
+	test("handles emoji without crashing", () => {
+		expect(healMarkdown("Hello 🌍 world")).toBe("Hello 🌍 world");
+	});
+
+	test("handles CJK characters with unclosed code", () => {
+		expect(healMarkdown("`代码")).toBe("`代码`");
+	});
 });
 
 // --- Frontmatter ---

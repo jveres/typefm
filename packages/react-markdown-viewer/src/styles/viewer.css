@@ -1,0 +1,947 @@
+/**
+ * Markdown Viewer - Core Styles (GitHub-style)
+ * 
+ * Styles based on GitHub's Primer design system for markdown rendering.
+ * Supports light/dark themes and streaming cursor animation.
+ * 
+ * Theme Support:
+ *   - Automatic: Uses prefers-color-scheme media query
+ *   - Manual: Add .dark class or data-theme="dark" to parent element
+ * 
+ * Customization:
+ *   Override CSS variables on .markdown-viewer:
+ *   
+ *   .markdown-viewer {
+ *     --bgColor-default: #ffffff;
+ *     --borderColor-default: #d1d9e0;
+ *     --cursor-color: #f5a1ff;
+ *   }
+ */
+
+/* ============================================
+   Root Container & CSS Variables (Light Theme)
+   Based on GitHub Primer design tokens
+   ============================================ */
+.markdown-viewer {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  /* Base sizing tokens */
+  --base-size-4: 4px;
+  --base-size-8: 8px;
+  --base-size-16: 16px;
+  --base-size-24: 24px;
+  --base-size-40: 40px;
+
+  /* Typography tokens */
+  --base-text-weight-normal: 400;
+  --base-text-weight-medium: 500;
+  --base-text-weight-semibold: 600;
+  --fontStack-sansSerif: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --fontStack-monospace: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+
+  /* Background colors */
+  --bgColor-default: #ffffff;
+  --bgColor-muted: #f6f8fa;
+  --bgColor-neutral-muted: rgba(175, 184, 193, 0.2);
+  --bgColor-attention-muted: #fff8c5;
+
+  /* Border colors */
+  --borderColor-default: #d1d9e0;
+  --borderColor-muted: #d1d9e0b3;
+
+  /* Foreground colors */
+  --fgColor-default: #1f2328;
+  --fgColor-muted: #59636e;
+  --fgColor-accent: #0969da;
+
+  /* Cursor */
+  --cursor-color: #f5a1ff;
+  --cursor-border-radius: 2px;
+}
+
+/* ============================================
+   Markdown Content Container
+   ============================================ */
+.markdown-viewer .markdown {
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  contain: layout style;
+  isolation: isolate;
+  font-family: var(--fontStack-sansSerif);
+  font-size: 16px;
+  font-weight: var(--base-text-weight-normal);
+  line-height: 1.5;
+  color: var(--fgColor-default);
+  min-width: 0;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Block element margins (GitHub pattern) */
+.markdown-viewer .markdown p,
+.markdown-viewer .markdown blockquote,
+.markdown-viewer .markdown ul,
+.markdown-viewer .markdown ol,
+.markdown-viewer .markdown dl,
+.markdown-viewer .markdown table,
+.markdown-viewer .markdown pre,
+.markdown-viewer .markdown details {
+  margin-top: 0;
+  margin-bottom: var(--base-size-16);
+}
+
+/* First/last child margin removal */
+.markdown-viewer .markdown > *:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-viewer .markdown > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* ============================================
+   Typography - Headings
+   ============================================ */
+.markdown-viewer .markdown h1,
+.markdown-viewer .markdown h2,
+.markdown-viewer .markdown h3,
+.markdown-viewer .markdown h4,
+.markdown-viewer .markdown h5,
+.markdown-viewer .markdown h6 {
+  margin-top: var(--base-size-24);
+  margin-bottom: var(--base-size-16);
+  font-weight: var(--base-text-weight-semibold);
+  line-height: 1.25;
+}
+
+.markdown-viewer .markdown h1 {
+  padding-bottom: 0.3em;
+  font-size: 2em;
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+
+.markdown-viewer .markdown h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+
+.markdown-viewer .markdown h3 {
+  font-size: 1.25em;
+}
+
+.markdown-viewer .markdown h4 {
+  font-size: 1em;
+}
+
+.markdown-viewer .markdown h5 {
+  font-size: 0.875em;
+}
+
+.markdown-viewer .markdown h6 {
+  font-size: 0.85em;
+  color: var(--fgColor-muted);
+}
+
+/* Code inside headings */
+.markdown-viewer .markdown h1 tt,
+.markdown-viewer .markdown h1 code,
+.markdown-viewer .markdown h2 tt,
+.markdown-viewer .markdown h2 code,
+.markdown-viewer .markdown h3 tt,
+.markdown-viewer .markdown h3 code,
+.markdown-viewer .markdown h4 tt,
+.markdown-viewer .markdown h4 code,
+.markdown-viewer .markdown h5 tt,
+.markdown-viewer .markdown h5 code,
+.markdown-viewer .markdown h6 tt,
+.markdown-viewer .markdown h6 code {
+  padding: 0 0.2em;
+  font-size: inherit;
+}
+
+/* ============================================
+   Typography - Inline Formatting
+   ============================================ */
+.markdown-viewer .markdown strong,
+.markdown-viewer .markdown b {
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.markdown-viewer .markdown em,
+.markdown-viewer .markdown i {
+  font-style: italic;
+  font-synthesis: style;
+}
+
+.markdown-viewer .markdown mark {
+  background-color: var(--bgColor-attention-muted);
+  color: var(--fgColor-default);
+  border-radius: 0.125rem;
+  padding: 0.125rem 0.25rem;
+}
+
+.markdown-viewer .markdown small {
+  font-size: 90%;
+}
+
+.markdown-viewer .markdown sub,
+.markdown-viewer .markdown sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.markdown-viewer .markdown sub {
+  bottom: -0.25em;
+}
+
+.markdown-viewer .markdown sup {
+  top: -0.5em;
+}
+
+/* ============================================
+   Horizontal Rule
+   ============================================ */
+.markdown-viewer .markdown hr {
+  box-sizing: content-box;
+  overflow: hidden;
+  border: 0;
+  height: 0.25em;
+  padding: 0;
+  margin: var(--base-size-24) 0;
+  background-color: var(--borderColor-muted);
+}
+
+/* ============================================
+   Blockquotes
+   ============================================ */
+.markdown-viewer .markdown blockquote {
+  margin-left: 0;
+  padding: 0 1em;
+  color: var(--fgColor-muted);
+  border-left: 0.25em solid var(--borderColor-default);
+}
+
+.markdown-viewer .markdown blockquote > :first-child {
+  margin-top: 0;
+}
+
+.markdown-viewer .markdown blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   Links
+   ============================================ */
+.markdown-viewer .markdown a {
+  display: inline;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+  color: var(--fgColor-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  background-color: transparent;
+}
+
+.markdown-viewer .markdown a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================
+   Images
+   ============================================ */
+.markdown-viewer .markdown img {
+  border-style: none;
+  max-width: 100%;
+  box-sizing: content-box;
+  background-color: var(--bgColor-default);
+}
+
+.markdown-viewer .markdown img[align="right"] {
+  padding-left: 20px;
+}
+
+.markdown-viewer .markdown img[align="left"] {
+  padding-right: 20px;
+}
+
+/* ============================================
+   Code - Inline Code
+   ============================================ */
+.markdown-viewer .markdown code,
+.markdown-viewer .markdown tt,
+.markdown-viewer .markdown samp {
+  font-family: var(--fontStack-monospace);
+  font-size: 85%;
+}
+
+.markdown-viewer .markdown code,
+.markdown-viewer .markdown tt {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: var(--bgColor-neutral-muted);
+  border-radius: 6px;
+}
+
+.markdown-viewer .markdown code br,
+.markdown-viewer .markdown tt br {
+  display: none;
+}
+
+.markdown-viewer .markdown del {
+  text-decoration: line-through;
+}
+
+.markdown-viewer .markdown del code {
+  text-decoration: inherit;
+}
+
+/* ============================================
+   Code - Pre/Code Blocks
+   ============================================ */
+.markdown-viewer .markdown pre {
+  position: relative;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-family: var(--fontStack-monospace);
+  word-wrap: normal;
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+.markdown-viewer .markdown pre code {
+  font-size: 100%;
+}
+
+.markdown-viewer .markdown pre > code {
+  display: block;
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+  overflow: visible;
+  line-height: inherit;
+  /* Ensure empty code blocks have height for cursor visibility */
+  min-height: 1.4em;
+}
+
+/* Highlighted code blocks */
+.markdown-viewer .markdown .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+
+.markdown-viewer .markdown .highlight pre,
+.markdown-viewer .markdown pre {
+  padding: var(--base-size-16);
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: var(--fgColor-default);
+  background-color: var(--bgColor-muted);
+  border-radius: 6px;
+}
+
+.markdown-viewer .markdown pre code,
+.markdown-viewer .markdown pre tt {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+
+/* ============================================
+   Code Block Wrapper (with Copy Button)
+   ============================================ */
+.markdown-viewer .markdown .code-block-wrapper {
+  position: relative;
+  max-width: 100%;
+}
+
+.markdown-viewer .markdown .code-block-wrapper pre {
+  margin-bottom: var(--base-size-16);
+}
+
+/* Copy button - hidden by default, shown on hover */
+.markdown-viewer .markdown .copy-btn {
+  position: absolute;
+  top: var(--base-size-8);
+  right: var(--base-size-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--base-size-4);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  background: var(--bgColor-default);
+  color: var(--fgColor-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+  z-index: 1;
+}
+
+.markdown-viewer .markdown .code-block-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+
+.markdown-viewer .markdown .copy-btn:hover {
+  background: var(--bgColor-muted);
+  color: var(--fgColor-default);
+}
+
+.markdown-viewer .markdown .copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* Copy button icons */
+.markdown-viewer .markdown .copy-btn .copy-icon,
+.markdown-viewer .markdown .copy-btn .check-icon {
+  flex-shrink: 0;
+}
+
+.markdown-viewer .markdown .copy-btn .check-icon {
+  display: none;
+}
+
+.markdown-viewer .markdown .copy-btn.copied .copy-icon {
+  display: none;
+}
+
+.markdown-viewer .markdown .copy-btn.copied .check-icon {
+  display: block;
+  color: #22c55e;
+}
+
+.markdown-viewer .markdown .copy-btn.copied {
+  opacity: 1;
+}
+
+/* Code line wrapping for syntax highlighting */
+.markdown-viewer .markdown .code-line {
+  display: inline-block;
+}
+
+/* ============================================
+   Keyboard Keys
+   ============================================ */
+.markdown-viewer .markdown kbd {
+  display: inline-block;
+  padding: var(--base-size-4);
+  font: 11px var(--fontStack-monospace);
+  line-height: 10px;
+  color: var(--fgColor-default);
+  vertical-align: middle;
+  background-color: var(--bgColor-muted);
+  border: solid 1px var(--borderColor-muted);
+  border-bottom-color: var(--borderColor-muted);
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 0 var(--borderColor-muted);
+}
+
+/* ============================================
+   Color Boxes (for CSS color values)
+   ============================================ */
+.markdown-viewer .markdown .color-box {
+  position: relative;
+  top: -0.1em;
+  display: inline-block;
+  margin-right: 0.1em;
+  height: 0.8em;
+  width: 0.8em;
+  border-radius: 2px;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  vertical-align: middle;
+}
+
+/* ============================================
+   Definition Lists
+   ============================================ */
+.markdown-viewer .markdown dl {
+  padding: 0;
+}
+
+.markdown-viewer .markdown dl dt {
+  padding: 0;
+  margin-top: var(--base-size-16);
+  font-size: 1em;
+  font-style: italic;
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.markdown-viewer .markdown dl dd {
+  padding: 0 var(--base-size-16);
+  margin-left: 0;
+  margin-bottom: var(--base-size-16);
+}
+
+/* ============================================
+   Lists - Ordered & Unordered
+   ============================================ */
+.markdown-viewer .markdown ul,
+.markdown-viewer .markdown ol {
+  padding-left: 2em;
+  /* margin-top/bottom inherited from block element rule above */
+}
+
+/* Nested ordered lists stay decimal (GitHub style) */
+.markdown-viewer .markdown ol ol,
+.markdown-viewer .markdown ul ol {
+  list-style-type: decimal;
+}
+
+.markdown-viewer .markdown ul ul,
+.markdown-viewer .markdown ul ol,
+.markdown-viewer .markdown ol ol,
+.markdown-viewer .markdown ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-viewer .markdown li + li {
+  margin-top: 0.25em;
+}
+
+.markdown-viewer .markdown li > p {
+  margin-top: var(--base-size-16);
+}
+
+.markdown-viewer .markdown ol[type="a s"] {
+  list-style-type: lower-alpha;
+}
+
+.markdown-viewer .markdown ol[type="A s"] {
+  list-style-type: upper-alpha;
+}
+
+.markdown-viewer .markdown ol[type="i s"] {
+  list-style-type: lower-roman;
+}
+
+.markdown-viewer .markdown ol[type="I s"] {
+  list-style-type: upper-roman;
+}
+
+.markdown-viewer .markdown ol[type="1"] {
+  list-style-type: decimal;
+}
+
+.markdown-viewer .markdown div > ol:not([type]) {
+  list-style-type: decimal;
+}
+
+/* ============================================
+   Task Lists (Checkboxes)
+   ============================================ */
+.markdown-viewer .markdown .task-list-item label {
+  font-weight: var(--base-text-weight-normal);
+}
+
+.markdown-viewer .markdown .task-list-item.enabled label {
+  cursor: pointer;
+}
+
+.markdown-viewer .markdown .task-list-item + .task-list-item {
+  margin-top: var(--base-size-4);
+}
+
+.markdown-viewer .markdown .task-list-item-checkbox {
+  margin: 0 0.2em 0.25em -1.4em;
+  vertical-align: middle;
+}
+
+/* Task lists have same indentation as regular lists (GitHub style) */
+.markdown-viewer .markdown ul.contains-task-list {
+  padding-left: 2em;
+}
+
+.markdown-viewer .markdown .task-list-item {
+  list-style-type: none;
+  margin-left: 0;
+}
+
+/* Nested lists keep normal indentation */
+.markdown-viewer .markdown li > ul,
+.markdown-viewer .markdown li > ol {
+  margin-left: 0;
+  padding-left: 2em;
+}
+
+/* ============================================
+   Tables
+   ============================================ */
+.markdown-viewer .markdown .table-wrapper {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.markdown-viewer .markdown table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  font-variant: tabular-nums;
+}
+
+.markdown-viewer .markdown table th {
+  font-weight: var(--base-text-weight-semibold);
+  background-color: var(--bgColor-muted);
+}
+
+.markdown-viewer .markdown table th,
+.markdown-viewer .markdown table td {
+  padding: 6px 13px;
+  border: 1px solid var(--borderColor-default);
+}
+
+.markdown-viewer .markdown table td > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-viewer .markdown table tr {
+  background-color: var(--bgColor-default);
+  border-top: 1px solid var(--borderColor-muted);
+}
+
+.markdown-viewer .markdown table tr:nth-child(2n) {
+  background-color: var(--bgColor-muted);
+}
+
+.markdown-viewer .markdown table img {
+  background-color: transparent;
+}
+
+/* ============================================
+   Details/Summary (Collapsible)
+   ============================================ */
+.markdown-viewer .markdown details,
+.markdown-viewer .markdown figcaption,
+.markdown-viewer .markdown figure {
+  display: block;
+}
+
+.markdown-viewer .markdown summary {
+  display: list-item;
+  cursor: pointer;
+}
+
+.markdown-viewer .markdown figure {
+  margin: 1em var(--base-size-40);
+}
+
+/* Headings inside summary */
+.markdown-viewer .markdown summary h1,
+.markdown-viewer .markdown summary h2,
+.markdown-viewer .markdown summary h3,
+.markdown-viewer .markdown summary h4,
+.markdown-viewer .markdown summary h5,
+.markdown-viewer .markdown summary h6 {
+  display: inline-block;
+}
+
+.markdown-viewer .markdown summary h1,
+.markdown-viewer .markdown summary h2 {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* ============================================
+   Footnotes
+   ============================================ */
+.markdown-viewer .markdown .footnotes {
+  margin-top: var(--base-size-16);
+}
+
+.markdown-viewer .markdown .footnotes::before {
+  content: "Footnotes";
+  display: block;
+  font-size: 24px; /* 1.5em of 16px base */
+  font-weight: var(--base-text-weight-semibold);
+  line-height: 1.25;
+  color: var(--fgColor-default);
+  padding-bottom: 0.3em;
+  margin-bottom: var(--base-size-16);
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+
+.markdown-viewer .markdown .footnotes ol {
+  padding-left: var(--base-size-16);
+}
+
+.markdown-viewer .markdown .footnotes ol ul {
+  display: block;
+  padding-left: 2em;
+  margin-top: var(--base-size-16);
+}
+
+.markdown-viewer .markdown .footnotes li {
+  position: relative;
+}
+
+.markdown-viewer .markdown .footnotes li:target::before {
+  position: absolute;
+  top: calc(var(--base-size-8) * -1);
+  right: calc(var(--base-size-8) * -1);
+  bottom: calc(var(--base-size-8) * -1);
+  left: calc(var(--base-size-24) * -1);
+  pointer-events: none;
+  content: "";
+  border: 2px solid var(--fgColor-accent);
+  border-radius: 6px;
+}
+
+.markdown-viewer .markdown .footnotes li:target {
+  color: var(--fgColor-default);
+}
+
+.markdown-viewer .markdown [data-footnote-ref] {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+  top: -0.5em;
+  color: var(--fgColor-accent);
+  text-decoration: underline;
+}
+
+/* GitHub wraps footnote refs with brackets [1] */
+.markdown-viewer .markdown [data-footnote-ref]::before {
+  content: '[';
+}
+
+.markdown-viewer .markdown [data-footnote-ref]::after {
+  content: ']';
+}
+
+.markdown-viewer .markdown .footnote-ref {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+  top: -0.5em;
+}
+
+.markdown-viewer .markdown .footnote-ref > a {
+  display: inline;
+  color: var(--fgColor-accent);
+  text-decoration: underline;
+}
+
+.markdown-viewer .markdown a.footnote-backref {
+  font-family: monospace;
+}
+
+/* section.footnotes - same styles as .footnotes for compatibility */
+.markdown-viewer .markdown section.footnotes {
+  margin-top: var(--base-size-16);
+}
+
+.markdown-viewer .markdown section.footnotes::before {
+  content: "Footnotes";
+  display: block;
+  font-size: 24px;
+  font-weight: var(--base-text-weight-semibold);
+  line-height: 1.25;
+  color: var(--fgColor-default);
+  padding-bottom: 0.3em;
+  margin-bottom: var(--base-size-16);
+  border-bottom: 1px solid var(--borderColor-muted);
+}
+
+.markdown-viewer .markdown section.footnotes ol {
+  padding-left: var(--base-size-16);
+}
+
+.markdown-viewer .markdown section.footnotes ol ul {
+  display: block;
+  padding-left: 2em;
+  margin-top: var(--base-size-16);
+}
+
+/* ============================================
+   Emoji
+   ============================================ */
+.markdown-viewer .markdown .emoji,
+.markdown-viewer .markdown g-emoji {
+  display: inline-block;
+  min-width: 1ch;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 1em;
+  font-style: normal !important;
+  font-weight: var(--base-text-weight-normal);
+  line-height: 1;
+  vertical-align: -0.075em;
+}
+
+.markdown-viewer .markdown .emoji {
+  max-width: none;
+  vertical-align: text-top;
+  background-color: transparent;
+}
+
+/* ============================================
+   Abbreviations
+   ============================================ */
+.markdown-viewer .markdown abbr[title] {
+  border-bottom: none;
+  text-decoration: underline dotted;
+}
+
+/* ============================================
+   Streaming Cursor
+   Animated cursor shown during streaming mode
+   ============================================ */
+.markdown-viewer .markdown .cursor {
+  display: inline-block;
+  vertical-align: baseline;
+  line-height: inherit;
+}
+
+.markdown-viewer .markdown .cursor::after {
+  content: "";
+  display: inline-block;
+  width: 0.6em;
+  min-height: 1em !important;
+  background-color: var(--cursor-color);
+  vertical-align: middle;
+
+  /* Safari fix: GPU acceleration prevents ghost shadows */
+  transform: translateY(-0.08em) translateZ(0);
+
+  /* Hint browser to optimize for movement and filter repaints */
+  will-change: transform, filter;
+
+  border-radius: var(--cursor-border-radius);
+  pointer-events: none !important;
+  filter: drop-shadow(0 0 6px var(--cursor-color));
+
+  /* Blink animation controlled by cursor controller via CSS variables.
+     --cursor-blink-name toggles between cursor-blink and cursor-blink- to restart animation.
+     --cursor-blink-duration controls speed (default 1s).
+     --cursor-blink-delay controls delay before blinking starts (default 1s). */
+  animation: var(--cursor-blink-name, cursor-blink)
+    var(--cursor-blink-duration, 1s) step-end var(--cursor-blink-delay, 1s)
+    infinite;
+}
+
+/* ============================================
+   Cursor Blink Animation Keyframes
+   Two identical keyframes allow animation restart by toggling between them
+   ============================================ */
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes cursor-blink- {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Cursor States
+   ============================================ */
+
+/* Active cursor (receiving updates) - no blink, solid */
+.markdown-viewer .markdown .cursor.cursor-active::after {
+  animation: none;
+  opacity: 1;
+}
+
+/* Unfocused state - hollow frame cursor */
+.markdown-viewer:not(:focus-within) .markdown .cursor::after {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--cursor-color);
+  filter: drop-shadow(0 0 4px var(--cursor-color));
+}
+
+/* ============================================
+   Dark Theme
+   Activated by:
+   1. Parent element with .dark class (Tailwind pattern)
+   2. Parent element with data-theme="dark" attribute
+   3. OS-level dark mode preference (prefers-color-scheme)
+   ============================================ */
+
+/* Dark theme via parent class or attribute */
+:is(.dark, [data-theme="dark"]) .markdown-viewer {
+  color-scheme: dark;
+
+  /* Background colors */
+  --bgColor-default: #0d1117;
+  --bgColor-muted: #151b23;
+  --bgColor-neutral-muted: rgba(110, 118, 129, 0.4);
+  --bgColor-attention-muted: #bb800926;
+
+  /* Border colors */
+  --borderColor-default: #3d444d;
+  --borderColor-muted: #3d444db3;
+
+  /* Foreground colors */
+  --fgColor-default: #f0f6fc;
+  --fgColor-muted: #9198a1;
+  --fgColor-accent: #4493f8;
+
+  /* Cursor */
+  --cursor-color: #ab65f7;
+}
+
+/* ============================================
+   Dark Theme via OS Preference
+   Fallback when no explicit theme class is set
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) {
+    color-scheme: dark;
+
+    /* Background colors */
+    --bgColor-default: #0d1117;
+    --bgColor-muted: #151b23;
+    --bgColor-neutral-muted: rgba(110, 118, 129, 0.4);
+    --bgColor-attention-muted: #bb800926;
+
+    /* Border colors */
+    --borderColor-default: #3d444d;
+    --borderColor-muted: #3d444db3;
+
+    /* Foreground colors */
+    --fgColor-default: #f0f6fc;
+    --fgColor-muted: #9198a1;
+    --fgColor-accent: #4493f8;
+
+    /* Cursor */
+    --cursor-color: #ab65f7;
+  }
+}

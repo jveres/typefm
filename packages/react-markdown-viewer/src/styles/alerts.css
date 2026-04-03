@@ -1,0 +1,294 @@
+/**
+ * GitHub-Style Alert Boxes
+ * 
+ * Renders callout boxes for notes, warnings, tips, etc.
+ * Compatible with GitHub Flavored Markdown alert syntax.
+ * 
+ * Syntax:
+ *   > [!NOTE]
+ *   > This is a note.
+ * 
+ * Supported types: NOTE, TIP, IMPORTANT, WARNING, CAUTION
+ * 
+ * Customization:
+ *   Override the CSS variables to change alert colors:
+ *   
+ *   .markdown-viewer {
+ *     --borderColor-accent-emphasis: #0969da;
+ *     --borderColor-success-emphasis: #1a7f37;
+ *     --borderColor-attention-emphasis: #9a6700;
+ *   }
+ */
+
+/* ============================================
+   Alert Color Variables (Light Theme)
+   ============================================ */
+.markdown-viewer {
+  /* Border colors */
+  --borderColor-accent-emphasis: #0969da;
+  --borderColor-success-emphasis: #1a7f37;
+  --borderColor-attention-emphasis: #9a6700;
+  --borderColor-danger-emphasis: #cf222e;
+  --borderColor-done-emphasis: #8250df;
+
+  /* Foreground colors for alert titles */
+  --fgColor-accent: #0969da;
+  --fgColor-success: #1a7f37;
+  --fgColor-attention: #9a6700;
+  --fgColor-danger: #d1242f;
+  --fgColor-done: #8250df;
+}
+
+/* ============================================
+   Dark Theme Alert Colors
+   ============================================ */
+:is(.dark, [data-theme="dark"]) .markdown-viewer {
+  /* Border colors */
+  --borderColor-accent-emphasis: #1f6feb;
+  --borderColor-success-emphasis: #238636;
+  --borderColor-attention-emphasis: #9e6a03;
+  --borderColor-danger-emphasis: #da3633;
+  --borderColor-done-emphasis: #8957e5;
+
+  /* Foreground colors for alert titles */
+  --fgColor-accent: #4493f8;
+  --fgColor-success: #3fb950;
+  --fgColor-attention: #d29922;
+  --fgColor-danger: #f85149;
+  --fgColor-done: #ab7df8;
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) {
+    /* Border colors */
+    --borderColor-accent-emphasis: #1f6feb;
+    --borderColor-success-emphasis: #238636;
+    --borderColor-attention-emphasis: #9e6a03;
+    --borderColor-danger-emphasis: #da3633;
+    --borderColor-done-emphasis: #8957e5;
+
+    /* Foreground colors for alert titles */
+    --fgColor-accent: #4493f8;
+    --fgColor-success: #3fb950;
+    --fgColor-attention: #d29922;
+    --fgColor-danger: #f85149;
+    --fgColor-done: #ab7df8;
+  }
+}
+
+/* ============================================
+   Base Alert Container
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert {
+  padding: var(--base-size-8, 0.5rem) var(--base-size-16, 1rem);
+  margin-bottom: var(--base-size-16, 1rem);
+  color: inherit;
+  border-left: 0.25em solid var(--borderColor-default, #d1d9e0);
+}
+
+.markdown-viewer .markdown .markdown-alert > :first-child {
+  margin-top: 0;
+}
+
+.markdown-viewer .markdown .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   Alert Title (with icon)
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: var(--base-text-weight-medium, 500);
+  align-items: center;
+  line-height: 1;
+}
+
+.markdown-viewer .markdown .markdown-alert-title::before {
+  content: ' ';
+  display: inline-block;
+  margin-right: 0.5rem;
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  background-position: left;
+  background-repeat: no-repeat;
+}
+
+/* ============================================
+   Alert Title - Context Overrides
+   Ensure icons render correctly in nested contexts
+   ============================================ */
+.markdown-viewer .markdown li .markdown-alert-title,
+.markdown-viewer .markdown blockquote .markdown-alert-title,
+.markdown-viewer .markdown div .markdown-alert-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.markdown-viewer .markdown li .markdown-alert-title::before,
+.markdown-viewer .markdown blockquote .markdown-alert-title::before,
+.markdown-viewer .markdown div .markdown-alert-title::before {
+  content: ' ';
+  display: inline-block;
+  margin-right: 0.5rem;
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  background-position: left;
+  background-repeat: no-repeat;
+}
+
+/* ============================================
+   Note Alert
+   For general information and helpful context
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert.markdown-alert-note {
+  border-left-color: var(--borderColor-accent-emphasis);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--fgColor-accent);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-note .markdown-alert-title::before,
+.markdown-viewer .markdown li .markdown-alert.markdown-alert-note .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%230969da' d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+}
+
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown .markdown-alert.markdown-alert-note .markdown-alert-title::before,
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown li .markdown-alert.markdown-alert-note .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%234493f8' d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown .markdown-alert.markdown-alert-note .markdown-alert-title::before,
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown li .markdown-alert.markdown-alert-note .markdown-alert-title::before {
+    background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%234493f8' d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+  }
+}
+
+/* ============================================
+   Tip Alert
+   For helpful suggestions and best practices
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert.markdown-alert-tip {
+  border-left-color: var(--borderColor-success-emphasis);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--fgColor-success);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-tip .markdown-alert-title::before,
+.markdown-viewer .markdown li .markdown-alert.markdown-alert-tip .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%231a7f37' d='M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z'/%3E%3C/svg%3E");
+}
+
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown .markdown-alert.markdown-alert-tip .markdown-alert-title::before,
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown li .markdown-alert.markdown-alert-tip .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%233fb950' d='M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown .markdown-alert.markdown-alert-tip .markdown-alert-title::before,
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown li .markdown-alert.markdown-alert-tip .markdown-alert-title::before {
+    background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%233fb950' d='M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z'/%3E%3C/svg%3E");
+  }
+}
+
+/* ============================================
+   Important Alert
+   For crucial information requiring attention
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert.markdown-alert-important {
+  border-left-color: var(--borderColor-done-emphasis);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--fgColor-done);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-important .markdown-alert-title::before,
+.markdown-viewer .markdown li .markdown-alert.markdown-alert-important .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%238250df' d='M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+}
+
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown .markdown-alert.markdown-alert-important .markdown-alert-title::before,
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown li .markdown-alert.markdown-alert-important .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23ab7df8' d='M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown .markdown-alert.markdown-alert-important .markdown-alert-title::before,
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown li .markdown-alert.markdown-alert-important .markdown-alert-title::before {
+    background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23ab7df8' d='M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+  }
+}
+
+/* ============================================
+   Warning Alert
+   For potential issues or things to be careful about
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert.markdown-alert-warning {
+  border-left-color: var(--borderColor-attention-emphasis);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--fgColor-attention);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-warning .markdown-alert-title::before,
+.markdown-viewer .markdown li .markdown-alert.markdown-alert-warning .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%239a6700' d='M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+}
+
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown .markdown-alert.markdown-alert-warning .markdown-alert-title::before,
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown li .markdown-alert.markdown-alert-warning .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23d29922' d='M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown .markdown-alert.markdown-alert-warning .markdown-alert-title::before,
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown li .markdown-alert.markdown-alert-warning .markdown-alert-title::before {
+    background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23d29922' d='M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+  }
+}
+
+/* ============================================
+   Caution Alert
+   For dangerous actions or critical warnings
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert.markdown-alert-caution {
+  border-left-color: var(--borderColor-danger-emphasis);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--fgColor-danger);
+}
+
+.markdown-viewer .markdown .markdown-alert.markdown-alert-caution .markdown-alert-title::before,
+.markdown-viewer .markdown li .markdown-alert.markdown-alert-caution .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23d1242f' d='M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+}
+
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown .markdown-alert.markdown-alert-caution .markdown-alert-title::before,
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown li .markdown-alert.markdown-alert-caution .markdown-alert-title::before {
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23f85149' d='M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown .markdown-alert.markdown-alert-caution .markdown-alert-title::before,
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown li .markdown-alert.markdown-alert-caution .markdown-alert-title::before {
+    background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23f85149' d='M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+  }
+}
+
+/* ============================================
+   Nested Alerts
+   Handle color inheritance in nested contexts
+   ============================================ */
+.markdown-viewer .markdown .markdown-alert .markdown-alert {
+  color: inherit;
+}

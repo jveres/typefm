@@ -43,7 +43,12 @@ fn is_escaped(s: &str, pos: usize) -> bool {
 }
 
 fn in_fenced_code_block(s: &str, up_to: usize) -> bool {
-    let text = &s[..up_to];
+    // Snap to char boundary (callers may pass byte offsets inside multi-byte chars)
+    let mut pos = up_to.min(s.len());
+    while pos > 0 && !s.is_char_boundary(pos) {
+        pos -= 1;
+    }
+    let text = &s[..pos];
     let mut fences = 0;
     let mut i = 0;
     let bytes = text.as_bytes();
@@ -197,17 +202,33 @@ fn heal_setext(buf: &mut String) {
 
 fn heal_links(buf: &mut String) {
     // Find last unclosed [ or ![
+    // Track fence state inline to avoid O(n^2) from calling in_fenced_code_block per byte.
     let bytes = buf.as_bytes();
     let mut bracket_depth = 0i32;
     let mut last_open: Option<(usize, bool)> = None; // (pos, is_image)
+    let mut in_fence = false;
 
     let mut i = 0;
     while i < bytes.len() {
-        if is_escaped(buf, i) {
+        // Track fenced code blocks
+        if i + 2 < bytes.len()
+            && bytes[i] == b'`'
+            && bytes[i + 1] == b'`'
+            && bytes[i + 2] == b'`'
+            && !is_escaped(buf, i)
+        {
+            in_fence = !in_fence;
+            i += 3;
+            while i < bytes.len() && bytes[i] == b'`' {
+                i += 1;
+            }
+            continue;
+        }
+        if in_fence {
             i += 1;
             continue;
         }
-        if in_fenced_code_block(buf, i) {
+        if is_escaped(buf, i) {
             i += 1;
             continue;
         }
@@ -238,7 +259,7 @@ fn heal_links(buf: &mut String) {
     }
 
     // Have unclosed bracket
-    if let Some((pos, _is_image)) = last_open {
+    if let Some((pos, is_image)) = last_open {
         // Check if we have ]( after it
         let rest = &buf[pos..];
         if let Some(paren_rel) = rest.find("](") {
@@ -250,7 +271,7 @@ fn heal_links(buf: &mut String) {
             }
         }
         // No ]( — strip the opening marker
-        buf.drain(pos..pos + if _is_image { 2 } else { 1 });
+        buf.drain(pos..pos + if is_image { 2 } else { 1 });
     }
 }
 
@@ -533,5 +554,34 @@ mod tests {
     }
     #[test] fn heal_word_internal_underscore_unchanged() {
         assert_eq!(heal_markdown("var_name"), "var_name");
+    }
+
+    // --- Multi-byte Unicode ---
+    #[test] fn heal_zwsp_in_text() {
+        // ZWSP (U+200B) is 3 bytes — must not panic
+        assert_eq!(heal_markdown("Text\u{200B}with\u{200B}ZWSP"), "Text\u{200B}with\u{200B}ZWSP");
+    }
+    #[test] fn heal_zwsp_with_bold() {
+        assert_eq!(heal_markdown("**bold\u{200B}text"), "**bold\u{200B}text**");
+    }
+    #[test] fn heal_zwsp_with_link() {
+        assert_eq!(heal_markdown("[link\u{200B}text](url"), "[link\u{200B}text](url)");
+    }
+    #[test] fn heal_emoji_in_text() {
+        // Emoji are multi-byte (4 bytes)
+        assert_eq!(heal_markdown("Hello 🌍 world"), "Hello 🌍 world");
+    }
+    #[test] fn heal_emoji_with_unclosed_bold() {
+        assert_eq!(heal_markdown("**bold 🌍"), "**bold 🌍**");
+    }
+    #[test] fn heal_cjk_characters() {
+        // CJK characters are 3 bytes
+        assert_eq!(heal_markdown("你好世界"), "你好世界");
+    }
+    #[test] fn heal_cjk_with_unclosed_code() {
+        assert_eq!(heal_markdown("`代码"), "`代码`");
+    }
+    #[test] fn heal_mixed_multibyte_unchanged() {
+        assert_eq!(heal_markdown("café résumé naïve"), "café résumé naïve");
     }
 }

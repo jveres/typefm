@@ -1,0 +1,74 @@
+/**
+ * KaTeX Math Rendering Styles
+ * 
+ * Styles for LaTeX/math rendering using KaTeX.
+ * KaTeX is loaded lazily when math content is detected.
+ * 
+ * Customization:
+ *   Override CSS variables or these classes to customize appearance.
+ *   
+ * Usage in markdown:
+ *   Inline:  $x^2 + y^2 = r^2$
+ *   Display: $$\int_0^\infty e^{-x^2} dx$$
+ */
+
+/* ============================================
+   KaTeX Rendered Output
+   Applied after KaTeX processes math content
+   ============================================ */
+.markdown-viewer .markdown .katex {
+  font-size: 1em;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: clip;
+}
+
+/* Display math (block-level) alignment */
+.markdown-viewer .markdown .katex-display {
+  text-align: left !important;
+  margin-left: 0 !important;
+}
+
+/* Display math error (block-level) - centered like valid display math */
+/* More specific selector to override .katex-display text-align */
+.markdown-viewer .markdown .katex-display.katex-error-display {
+  display: block;
+  text-align: center !important;
+  margin: 1em 0;
+}
+
+/* ============================================
+   Math Placeholder (Loading State)
+   Shown while KaTeX library loads asynchronously
+   ============================================ */
+.markdown-viewer .markdown .math-placeholder {
+  font-family: 'KaTeX_Math', 'Times New Roman', serif;
+  font-style: italic;
+  color: var(--fgColor-muted, #59636e);
+  padding: 0.1em 0.2em;
+  background: var(--bgColor-muted, #f6f8fa);
+  border-radius: 6px;
+}
+
+/* Display math placeholder (block-level) */
+.markdown-viewer .markdown .math-placeholder[data-math-style="display"] {
+  display: block;
+  text-align: center;
+  padding: 0.5em;
+  margin: 1em 0;
+}
+
+/* ============================================
+   Dark Theme Math Placeholder
+   ============================================ */
+:is(.dark, [data-theme="dark"]) .markdown-viewer .markdown .math-placeholder {
+  color: var(--fgColor-muted, #9198a1);
+  background: var(--bgColor-muted, #151b23);
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-viewer:not(:is(.dark, [data-theme="dark"], [data-theme="light"]) *) .markdown .math-placeholder {
+    color: var(--fgColor-muted, #9198a1);
+    background: var(--bgColor-muted, #151b23);
+  }
+}
