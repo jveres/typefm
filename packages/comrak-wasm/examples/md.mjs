@@ -24,7 +24,7 @@ for (const arg of args) {
 	} else if (arg === "--no-shadow") {
 		noShadow = true;
 	} else if (arg === "--help" || arg === "-h") {
-		console.log("Usage: md [options] <file|->");
+		console.log("Usage: comrak-wasm [options] [file | -]");
 		console.log("");
 		console.log("Options:");
 		console.log("  -a, --ansi       ANSI colored output (default)");

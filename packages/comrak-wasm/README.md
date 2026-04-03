@@ -276,10 +276,10 @@ echo "# Hello **world**" | npx @typefm/comrak-wasm -
 npx @typefm/comrak-wasm -t -m --no-shadow README.md
 ````
 
-Or if installed globally / in a project, use the `comrak` command directly:
+Or if installed globally / in a project, use the `comrak-wasm` command directly:
 
 ```bash
-comrak README.md
+comrak-wasm README.md
 ```
 
 ## Playground
