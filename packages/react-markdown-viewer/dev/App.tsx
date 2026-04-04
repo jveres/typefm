@@ -90,30 +90,16 @@ const EDGE_CASES = [
 	},
 ];
 
-function useSystemDarkMode() {
-	const [dark, setDark] = useState(
-		() => window.matchMedia("(prefers-color-scheme: dark)").matches,
-	);
-
-	useEffect(() => {
-		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-		const handler = (e: MediaQueryListEvent) => setDark(e.matches);
-		mediaQuery.addEventListener("change", handler);
-		return () => mediaQuery.removeEventListener("change", handler);
-	}, []);
-
-	return [dark, setDark] as const;
-}
-
-export function App() {
+export function App({ dark }: { dark: boolean }) {
 	const [testCase, setTestCase] = useState<TestCase>("showcase");
-	const [dark, setDark] = useSystemDarkMode();
 	const [speed, setSpeed] = useState<SpeedPreset>("normal");
 	const [latency, setLatency] = useState<LatencyPreset>("medium");
 	const [initialLatency, setInitialLatency] = useState(true);
 	const [stressPreset, setStressPreset] = useState<StressPreset>("medium");
 	const [edgeCaseId, setEdgeCaseId] = useState("paragraph");
 	const [edgeCaseStreaming, setEdgeCaseStreaming] = useState(true);
+	const [useCustomMarkdown, setUseCustomMarkdown] = useState(false);
+	const [customMarkdown, setCustomMarkdown] = useState("");
 	const viewerRef = useRef<MarkdownViewerRef>(null);
 
 	// Chat state
@@ -134,8 +120,11 @@ export function App() {
 	);
 
 	const currentEdgeCase = useMemo(
-		() => EDGE_CASES.find((ec) => ec.id === edgeCaseId) ?? EDGE_CASES[0],
-		[edgeCaseId],
+		() =>
+			useCustomMarkdown
+				? { id: "custom", name: "Custom", input: customMarkdown }
+				: (EDGE_CASES.find((ec) => ec.id === edgeCaseId) ?? EDGE_CASES[0]),
+		[edgeCaseId, useCustomMarkdown, customMarkdown],
 	);
 
 	// Set source when test case changes
@@ -293,25 +282,7 @@ export function App() {
 	};
 
 	return (
-		<div className={`app ${dark ? "dark" : ""}`}>
-			<header className="header">
-				<nav className="header-nav">
-					<span className="nav-link active">
-						React Markdown Viewer
-					</span>
-				</nav>
-				<div className="header-controls">
-					<label className="dark-toggle">
-						<input
-							type="checkbox"
-							checked={dark}
-							onChange={(e) => setDark(e.target.checked)}
-						/>
-						<span>Dark Mode</span>
-					</label>
-				</div>
-			</header>
-
+		<>
 			<div className="controls">
 				<div className="controls-row">
 					<label className="control-group">
@@ -339,9 +310,11 @@ export function App() {
 							<span>Edge Case:</span>
 							<select
 								value={edgeCaseId}
-								onChange={(e) =>
-									setEdgeCaseId(e.target.value)
-								}
+								onChange={(e) => {
+									setEdgeCaseId(e.target.value);
+									setUseCustomMarkdown(false);
+								}}
+								disabled={useCustomMarkdown}
 							>
 								{EDGE_CASES.map((ec) => (
 									<option key={ec.id} value={ec.id}>
@@ -349,6 +322,16 @@ export function App() {
 									</option>
 								))}
 							</select>
+						</label>
+						<label className="control-group checkbox">
+							<input
+								type="checkbox"
+								checked={useCustomMarkdown}
+								onChange={(e) =>
+									setUseCustomMarkdown(e.target.checked)
+								}
+							/>
+							<span>Custom</span>
 						</label>
 						<label className="control-group checkbox streaming-toggle">
 							<input
@@ -366,6 +349,7 @@ export function App() {
 					<>
 						<div className="controls-row">
 							<button
+								type="button"
 								className="btn btn-primary"
 								onClick={handleStartStream}
 								disabled={state.isStreaming}
@@ -375,6 +359,7 @@ export function App() {
 									: "Start Stream"}
 							</button>
 							<button
+								type="button"
 								className="btn btn-secondary"
 								onClick={handleStop}
 								disabled={!state.isStreaming}
@@ -382,6 +367,7 @@ export function App() {
 								Stop
 							</button>
 							<button
+								type="button"
 								className="btn btn-secondary"
 								onClick={handleLoadInstant}
 								disabled={state.isStreaming}
@@ -391,6 +377,7 @@ export function App() {
 									: "Load Instant"}
 							</button>
 							<button
+								type="button"
 								className="btn btn-danger"
 								onClick={handleClear}
 								disabled={state.isStreaming}
@@ -537,7 +524,9 @@ export function App() {
 					<div className="edge-case-info">
 						<div className="edge-case-info-header">
 							<div className="edge-case-info-title">
-								{currentEdgeCase.name}
+								{useCustomMarkdown
+									? "Custom Markdown"
+									: currentEdgeCase.name}
 							</div>
 							<span
 								className={`streaming-status ${edgeCaseStreaming ? "on" : "off"}`}
@@ -548,10 +537,26 @@ export function App() {
 							</span>
 						</div>
 						<div className="edge-case-raw">
-							<div className="edge-case-raw-label">Input:</div>
-							<code className="edge-case-raw-content">
-								{currentEdgeCase.input}
-							</code>
+							<div className="edge-case-raw-label">
+								{useCustomMarkdown
+									? "Enter Markdown:"
+									: "Input:"}
+							</div>
+							{useCustomMarkdown ? (
+								<textarea
+									className="edge-case-input"
+									value={customMarkdown}
+									onChange={(e) =>
+										setCustomMarkdown(e.target.value)
+									}
+									placeholder="Enter your markdown here..."
+									rows={8}
+								/>
+							) : (
+								<code className="edge-case-raw-content">
+									{currentEdgeCase.input}
+								</code>
+							)}
 						</div>
 					</div>
 					<div className="edge-case-preview">
@@ -606,6 +611,6 @@ export function App() {
 					</div>
 				</main>
 			)}
-		</div>
+		</>
 	);
 }
