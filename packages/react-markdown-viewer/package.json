@@ -1,9 +1,12 @@
 {
 	"name": "@typefm/react-markdown-viewer",
-	"version": "0.0.1",
-	"private": true,
+	"version": "0.1.0",
+	"description": "High-performance React component for rendering markdown with streaming support, optimized for LLM chat interfaces",
+	"license": "MIT",
 	"sideEffects": false,
 	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
@@ -15,14 +18,43 @@
 		},
 		"./styles.css": "./dist/styles/index.css"
 	},
+	"files": [
+		"dist/",
+		"README.md",
+		"LICENSE"
+	],
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && cp -r src/styles dist/",
+		"prepack": "npm run build",
 		"lint": "tsc --noEmit",
 		"test": "vitest run"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jveres/typefm",
+		"directory": "packages/react-markdown-viewer"
+	},
+	"keywords": [
+		"markdown",
+		"react",
+		"streaming",
+		"llm",
+		"chat",
+		"viewer",
+		"github",
+		"gfm",
+		"commonmark",
+		"wasm",
+		"syntax-highlighting",
+		"katex",
+		"math"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"dependencies": {
-		"@typefm/comrak-wasm": "workspace:*",
+		"@typefm/comrak-wasm": "^0.2.0",
 		"highlight.js": "^11.11.1",
 		"idiomorph": "^0.7.4",
 		"katex": "^0.16.28"
