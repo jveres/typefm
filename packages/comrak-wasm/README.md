@@ -48,7 +48,6 @@ const html = mdToHtml("# Hello", {});
 | `mdToHtml`       | HTML       | Standard HTML rendering        |
 | `mdToCommonmark` | Markdown   | Normalized CommonMark          |
 | `mdToXml`        | XML        | CommonMark XML AST             |
-| `mdToTypst`      | Typst      | Typst typesetting format       |
 | `mdToText`       | Plain text | Structural text, no formatting |
 | `mdToAnsi`       | ANSI       | Terminal-colored output        |
 
@@ -66,7 +65,7 @@ mdToHtml(md, {
     alerts: true,
     footnotes: true,
     mathDollars: true,
-    headerIds: "",
+    headerIdPrefix: "",
     superscript: true,
     underline: true,
     spoiler: true,
