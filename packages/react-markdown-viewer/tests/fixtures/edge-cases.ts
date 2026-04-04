@@ -116,7 +116,7 @@ export const EDGE_CASES: EdgeCase[] = [
     input: "```\n// Error: Argument of type '",
     // No language specified, so no highlighting, just raw text.
     // healMarkdown closes the fence; cursor goes on its own line before closing fence.
-    streamingOutput: `<span class="code-line">// Error: Argument of type '</span>\n<span class="code-line"></span>${CURSOR}</code></pre></div>`,
+    streamingOutput: `<span class="code-line">// Error: Argument of type '</span>${CURSOR}</code></pre></div>`,
     nonStreamingOutput: ">// Error: Argument of type '</code></pre></div>",
   },
   {

@@ -287,10 +287,17 @@ function insertCursorIntoHealed(original: string, healed: string): string {
 	const suffix = healed.slice(original.length);
 
 	if (suffix.length === 0) {
-		// No healing — append cursor. Fix closing fence on same line:
-		// comrak requires ``` on its own line with nothing after it.
+		// No healing — append cursor.
+		// Some block constructs break if cursor is appended inline:
+		// - closing fences (```, $$) must be on their own line
+		// - table rows: cursor on same line breaks separator detection
 		if (original.endsWith("```") || original.endsWith("$$")) {
 			return original + "\n" + CURSOR_MARKER;
+		}
+		// Table separator row: cursor inline breaks table parsing.
+		// Double newline places cursor after the table as a block element.
+		if (/\|\s*[-:]+\s*[-:|  ]*$/.test(original)) {
+			return original + "\n\n" + CURSOR_MARKER;
 		}
 		return original + CURSOR_MARKER;
 	}
@@ -304,13 +311,24 @@ function insertCursorIntoHealed(original: string, healed: string): string {
 	//   "**", "*", "`", "~~", etc. — inline closers
 
 	if (suffix.startsWith("\n```") || suffix.startsWith("\n$$")) {
-		// Cursor goes after the \n (inside block), fence stays on its own line
-		return original + "\n" + CURSOR_MARKER + "\n" + suffix.slice(1);
+		// Cursor right after original content. If original has content after
+		// the opening fence (contains \n), cursor goes inline. If it's just
+		// the opening fence with no content, cursor needs its own line inside.
+		if (original.includes("\n")) {
+			return original + CURSOR_MARKER + suffix;
+		}
+		// Bare opening fence (e.g., "```") — cursor on new line inside block
+		return original + "\n" + CURSOR_MARKER + suffix;
 	}
 
 	if (suffix.startsWith("```") || suffix.startsWith("$$")) {
 		// Original ends with \n already. Add cursor, then newline + fence.
 		return original + CURSOR_MARKER + "\n" + suffix;
+	}
+
+	// Link/image closers: cursor goes after (inside URL would break it)
+	if (suffix === ")") {
+		return original + suffix + CURSOR_MARKER;
 	}
 
 	// Inline closers (**, *, `, ~~, __, _) — cursor goes before them
