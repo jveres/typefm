@@ -290,7 +290,6 @@ function insertCursorIntoHealed(original: string, healed: string): string {
 		// No healing — append cursor.
 		// Some block constructs break if cursor is appended inline:
 		// - closing fences (```, $$) must be on their own line
-		// - table rows: cursor on same line breaks separator detection
 		if (original.endsWith("```") || original.endsWith("$$")) {
 			return original + "\n" + CURSOR_MARKER;
 		}
@@ -298,6 +297,19 @@ function insertCursorIntoHealed(original: string, healed: string): string {
 		// Double newline places cursor after the table as a block element.
 		if (/\|\s*[-:]+\s*[-:|  ]*$/.test(original)) {
 			return original + "\n\n" + CURSOR_MARKER;
+		}
+		// Trailing inline closing delimiters: cursor directly after them
+		// can break comrak's parser (e.g., ~~**bold**~~⁠ fails).
+		// Insert cursor before the trailing delimiters instead.
+		// Only match actual delimiter sequences (**, ***, ~~, __, not single chars).
+		const trailingDelim = /(\*{2,3}|~{2}|_{2,3}|`+)$/.exec(original);
+		if (trailingDelim) {
+			const delimStart = original.length - trailingDelim[1].length;
+			return (
+				original.slice(0, delimStart) +
+				CURSOR_MARKER +
+				original.slice(delimStart)
+			);
 		}
 		return original + CURSOR_MARKER;
 	}
@@ -331,7 +343,17 @@ function insertCursorIntoHealed(original: string, healed: string): string {
 		return original + suffix + CURSOR_MARKER;
 	}
 
-	// Inline closers (**, *, `, ~~, __, _) — cursor goes before them
+	// Combine the end of original with suffix to find the full closing
+	// delimiter sequence (e.g., original ends "~", suffix "~" → "~~").
+	// Cursor goes before the entire delimiter to avoid breaking comrak.
+	const fullEnd = original + suffix;
+	const trailingDelim = /(\*{2,3}|~{2}|_{2,3}|`+)$/.exec(fullEnd);
+	if (trailingDelim) {
+		const pos = fullEnd.length - trailingDelim[1].length;
+		return fullEnd.slice(0, pos) + CURSOR_MARKER + fullEnd.slice(pos);
+	}
+
+	// Simple inline closers — cursor goes before suffix
 	return original + CURSOR_MARKER + suffix;
 }
 

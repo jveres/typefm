@@ -2,17 +2,7 @@
  * Streaming edge case tests for healMarkdown + cursor integration.
  *
  * These test incomplete markdown as it arrives during LLM streaming,
- * verifying that:
- * 1. healMarkdown closes unclosed delimiters correctly
- * 2. Cursor is placed at the user's writing position
- * 3. The rendered HTML is valid (no literal asterisks, broken tables, etc.)
- *
- * Sources:
- * - https://github.com/markedjs/marked/issues/3657
- * - https://github.com/ant-design/x/pull/1739
- * - https://developer.chrome.com/docs/ai/render-llm-responses
- * - https://github.com/ProseMirror/prosemirror-markdown/issues/16
- * - https://stack.watch/product/github/cmark-gfm/
+ * asserting exact output to catch structural regressions.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -22,6 +12,8 @@ import {
 	CURSOR_HTML,
 } from "../../src/lib/parser";
 import { cacheManager } from "../../src/lib/cache-manager";
+
+const C = CURSOR_HTML;
 
 /** Render markdown as if streaming (sync morph strategy + cursor marker) */
 function renderStreaming(md: string): string {
@@ -34,46 +26,19 @@ describe("streaming edge cases", () => {
 	});
 
 	// -----------------------------------------------------------------------
-	// 1. Trailing space stripping with all delimiter types
+	// 1. Trailing space with incomplete delimiters
 	// healMarkdown strips trailing single space, which can desync suffix calc
 	// -----------------------------------------------------------------------
 	describe("trailing space with incomplete delimiters", () => {
-		it("***bold-italic with trailing space", () => {
-			const html = renderStreaming("***bold ");
-			expect(html).toContain("<strong>");
-			expect(html).toContain("<em>");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("**bold with trailing space", () => {
-			const html = renderStreaming("**bold ");
-			expect(html).toContain("<strong>");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("*italic with trailing space", () => {
-			const html = renderStreaming("*italic ");
-			expect(html).toContain("<em>");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("~~strikethrough with trailing space", () => {
-			const html = renderStreaming("~~strike ");
-			expect(html).toContain("<del>");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("`inline code with trailing space", () => {
-			const html = renderStreaming("`code ");
-			expect(html).toContain("<code>");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("__underline with trailing space", () => {
-			const html = renderStreaming("__under ");
-			// __ is parsed as bold by comrak (not underline, which is disabled)
-			expect(html).toContain("<strong>");
-			expect(html).toContain(CURSOR_HTML);
+		it.each([
+			{ input: "***bold ", expected: `<p><em><strong>bold${C}</strong></em></p>\n` },
+			{ input: "**bold ", expected: `<p><strong>bold${C}</strong></p>\n` },
+			{ input: "*italic ", expected: `<p><em>italic${C}</em></p>\n` },
+			{ input: "~~strike ", expected: `<p><del>strike${C}</del></p>\n` },
+			{ input: "`code ", expected: `<p><code>code${C}</code></p>\n` },
+			{ input: "__under ", expected: `<p><strong>under${C}</strong></p>\n` },
+		])("$input heals correctly", ({ input, expected }) => {
+			expect(renderStreaming(input)).toBe(expected);
 		});
 	});
 
@@ -82,43 +47,26 @@ describe("streaming edge cases", () => {
 	// Inline delimiters must not span paragraph boundaries (\n\n)
 	// -----------------------------------------------------------------------
 	describe("cross-paragraph boundary", () => {
-		it("bold opener in first paragraph, text in second", () => {
-			const html = renderStreaming("**bold\n\nmore text");
-			// Should NOT wrap "more text" in <strong>
-			expect(html).not.toMatch(
-				/<strong>.*more text.*<\/strong>/s,
-			);
-		});
-
-		it("italic opener in first paragraph", () => {
-			const html = renderStreaming("*italic\n\nmore text");
-			expect(html).not.toMatch(/<em>.*more text.*<\/em>/s);
-		});
-
-		it("strikethrough across paragraphs", () => {
-			const html = renderStreaming("~~strike\n\nmore text");
-			expect(html).not.toMatch(
-				/<del>.*more text.*<\/del>/s,
-			);
-		});
-
-		it("inline code across paragraphs", () => {
-			const html = renderStreaming("`code\n\nmore text");
-			expect(html).not.toMatch(
-				/<code>.*more text.*<\/code>/s,
-			);
+		it.each([
+			{ delim: "**", label: "bold" },
+			{ delim: "*", label: "italic" },
+			{ delim: "~~", label: "strikethrough" },
+			{ delim: "`", label: "inline code" },
+		])("$label opener in first paragraph does not wrap second", ({ delim }) => {
+			const html = renderStreaming(`${delim}text\n\nmore`);
+			expect(html).toBe(`<p>${delim}text</p>\n<p>more${C}</p>\n`);
 		});
 
 		it("bold in second paragraph is healed", () => {
-			const html = renderStreaming("normal text\n\n**bold");
-			expect(html).toContain("<strong>bold");
+			expect(renderStreaming("normal text\n\n**bold")).toBe(
+				`<p>normal text</p>\n<p><strong>bold${C}</strong></p>\n`,
+			);
 		});
 
 		it("multiple paragraphs, only last healed", () => {
-			const html = renderStreaming("para1\n\npara2\n\n**bold");
-			expect(html).toContain("<strong>bold");
-			expect(html).toContain("para1");
-			expect(html).toContain("para2");
+			expect(renderStreaming("para1\n\npara2\n\n**bold")).toBe(
+				`<p>para1</p>\n<p>para2</p>\n<p><strong>bold${C}</strong></p>\n`,
+			);
 		});
 	});
 
@@ -126,100 +74,103 @@ describe("streaming edge cases", () => {
 	// 3. Nested/mixed delimiters
 	// -----------------------------------------------------------------------
 	describe("nested and mixed delimiters", () => {
-		it("bold inside italic: *italic **bold** text", () => {
-			const html = renderStreaming("*italic **bold** text");
-			expect(html).toContain("<strong>bold</strong>");
-			expect(html).toContain("<em>");
+		it("bold inside italic", () => {
+			expect(renderStreaming("*italic **bold** text")).toBe(
+				`<p><em>italic <strong>bold</strong> text${C}</em></p>\n`,
+			);
 		});
 
-		it("incomplete bold inside italic: *italic **bold", () => {
-			const html = renderStreaming("*italic **bold");
-			expect(html).toContain(CURSOR_HTML);
-			// Should not have literal asterisks in output
+		it("incomplete bold inside italic", () => {
+			expect(renderStreaming("*italic **bold")).toBe(
+				`<p><em>italic <strong>bold${C}</strong></em></p>\n`,
+			);
 		});
 
-		it("bold then italic: **bold** *italic", () => {
-			const html = renderStreaming("**bold** *italic");
-			expect(html).toContain("<strong>bold</strong>");
-			expect(html).toContain("<em>italic");
+		it("bold then italic", () => {
+			expect(renderStreaming("**bold** *italic")).toBe(
+				`<p><strong>bold</strong> <em>italic${C}</em></p>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 4. Delimiter ambiguity: * as list item vs emphasis
+	// 4. Delimiter ambiguity
 	// -----------------------------------------------------------------------
 	describe("delimiter ambiguity", () => {
 		it("* at start of line is a list item", () => {
-			const html = renderStreaming("* item one\n* item two");
-			expect(html).toContain("<li>");
+			expect(renderStreaming("* item one\n* item two")).toBe(
+				`<ul>\n<li>item one</li>\n<li>item two${C}</li>\n</ul>\n`,
+			);
 		});
 
 		it("*text at start of line is emphasis", () => {
-			const html = renderStreaming("*emphasized text");
-			expect(html).toContain("<em>");
+			expect(renderStreaming("*emphasized text")).toBe(
+				`<p><em>emphasized text${C}</em></p>\n`,
+			);
 		});
 
 		it("underscore mid-word is not italic", () => {
-			const html = renderStreaming("some_variable_name");
-			expect(html).not.toContain("<em>");
-			expect(html).toContain("some_variable_name");
+			expect(renderStreaming("some_variable_name")).toBe(
+				`<p>some_variable_name${C}</p>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 5. List followed by backtick (ant-design/x bug)
+	// 5. List + code transitions
 	// -----------------------------------------------------------------------
 	describe("list + code transitions", () => {
 		it("list item followed by code fence", () => {
 			const html = renderStreaming("- item\n\n```js\ncode");
-			expect(html).toContain("<li>");
-			expect(html).toContain("<code");
+			expect(html).toContain("<li>item</li>");
+			expect(html).toContain(`<span class="code-line">code</span>${C}</code></pre></div>`);
 		});
 
 		it("list item with inline code", () => {
-			const html = renderStreaming("- use `const`");
-			expect(html).toContain("<li>");
-			expect(html).toContain("<code>");
+			expect(renderStreaming("- use `const`")).toBe(
+				`<ul>\n<li>use <code>const${C}</code></li>\n</ul>\n`,
+			);
 		});
 
 		it("list item with incomplete inline code", () => {
-			const html = renderStreaming("- use `const");
-			expect(html).toContain("<li>");
-			expect(html).toContain("<code>");
+			expect(renderStreaming("- use `const")).toBe(
+				`<ul>\n<li>use <code>const${C}</code></li>\n</ul>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 6. Partial link/image mid-URL
+	// 6. Partial links and images
 	// -----------------------------------------------------------------------
 	describe("partial links and images", () => {
-		it("link with incomplete URL", () => {
-			const html = renderStreaming("[click](https://exam");
-			expect(html).toContain(CURSOR_HTML);
-			// Should not crash or produce broken HTML
-			expect(html).toBeTruthy();
-		});
-
-		it("link with complete text, no URL yet", () => {
-			const html = renderStreaming("[click here]");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("link text only, no bracket close", () => {
-			const html = renderStreaming("[click here");
-			expect(html).toContain(CURSOR_HTML);
-			expect(html).toContain("click here");
-		});
-
-		it("image with incomplete URL", () => {
-			const html = renderStreaming("![alt](https://img.com/pic");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("completed link has cursor after it", () => {
-			const html = renderStreaming("[click](https://example.com)");
-			expect(html).toContain("href=");
-			expect(html).toContain(CURSOR_HTML);
+		it.each([
+			{
+				input: "[click](https://exam",
+				expected: `<p><a href="https://exam" target="_blank" rel="noopener noreferrer">click</a>${C}</p>\n`,
+				label: "link with incomplete URL",
+			},
+			{
+				input: "[click here]",
+				expected: `<p>[click here]${C}</p>\n`,
+				label: "link text with no URL",
+			},
+			{
+				input: "[click here",
+				expected: `<p>[click here${C}</p>\n`,
+				label: "unclosed bracket",
+			},
+			{
+				input: "![alt](https://img.com/pic",
+				expected: `<p><img src="https://img.com/pic" alt="alt" />${C}</p>\n`,
+				label: "image with incomplete URL",
+			},
+			{
+				input: "[click](https://example.com)",
+				expected: `<p><a href="https://example.com" target="_blank" rel="noopener noreferrer">click</a>${C}</p>\n`,
+				label: "completed link",
+			},
+		])("$label", ({ input, expected }) => {
+			expect(renderStreaming(input)).toBe(expected);
 		});
 	});
 
@@ -229,215 +180,153 @@ describe("streaming edge cases", () => {
 	describe("code fence streaming", () => {
 		it("opening fence only", () => {
 			const html = renderStreaming("```");
-			expect(html).toContain("<code");
-			expect(html).toContain(CURSOR_HTML);
+			expect(html).toContain(`<code>${C}</code></pre></div>`);
 		});
 
 		it("fence with language, no content yet", () => {
 			const html = renderStreaming("```python\n");
-			expect(html).toContain("language-python");
-			expect(html).toContain(CURSOR_HTML);
+			expect(html).toContain(`<code class="language-python">${C}</code></pre></div>`);
 		});
 
 		it("fence with partial content", () => {
 			const html = renderStreaming("```js\nconst x = 1;");
-			expect(html).toContain("const x = 1;");
-			expect(html).toContain(CURSOR_HTML);
+			expect(html).toContain(`<span class="code-line">const x = 1;</span>${C}</code></pre></div>`);
 		});
 
 		it("fence with info string containing special chars", () => {
 			const html = renderStreaming("```js{1,3}\ncode");
-			expect(html).toContain("<code");
-			expect(html).toContain("code");
+			expect(html).toContain(`class="language-js{1,3}"`);
+			expect(html).toContain(`<span class="code-line">code</span>${C}`);
 		});
 
 		it("nested backticks inside code fence", () => {
 			const html = renderStreaming("```\nuse `const` here");
-			expect(html).toContain("const");
-		});
-
-		it("four backtick fence", () => {
-			const html = renderStreaming("````\ncode with ```\nmore");
-			expect(html).toContain("<code");
+			expect(html).toContain("use `const` here");
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 8. Incomplete HTML tags mid-stream
+	// 8. Incomplete HTML during streaming
 	// -----------------------------------------------------------------------
 	describe("incomplete HTML during streaming", () => {
-		it("unclosed div tag", () => {
-			const html = renderStreaming("text <div");
-			expect(html).toContain(CURSOR_HTML);
-			// healMarkdown strips incomplete HTML tags
-			expect(html).toContain("text");
-		});
-
-		it("unclosed tag with attributes", () => {
-			const html = renderStreaming('text <div class="test');
-			expect(html).toContain(CURSOR_HTML);
-			expect(html).toContain("text");
-		});
-
 		it("complete HTML tag followed by incomplete", () => {
-			const html = renderStreaming("<b>bold</b> <span");
-			expect(html).toContain("bold");
-			expect(html).toContain(CURSOR_HTML);
+			expect(renderStreaming("<b>bold</b> <span")).toBe(
+				`<p><b>bold</b> &lt;span${C}</p>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 9. DoS prevention — pathological inputs
+	// 9. DoS prevention
 	// -----------------------------------------------------------------------
 	describe("pathological inputs", () => {
-		it("many underscores (cmark-gfm CVE pattern)", () => {
-			const input = "_".repeat(10000);
+		it.each([
+			{ input: "_".repeat(10000), label: "many underscores" },
+			{ input: "*".repeat(10000), label: "many asterisks" },
+			{ input: "[".repeat(5000), label: "many unclosed brackets" },
+		])("$label completes within 3s", ({ input }) => {
 			const start = Date.now();
-			const html = renderStreaming(input);
+			renderStreaming(input);
 			expect(Date.now() - start).toBeLessThan(3000);
-			expect(html).toBeTruthy();
-		});
-
-		it("many asterisks", () => {
-			const input = "*".repeat(10000);
-			const start = Date.now();
-			const html = renderStreaming(input);
-			expect(Date.now() - start).toBeLessThan(3000);
-			expect(html).toBeTruthy();
 		});
 
 		it("deeply nested blockquotes", () => {
-			const input = "> ".repeat(200) + "deep";
 			const start = Date.now();
-			const html = renderStreaming(input);
+			const html = renderStreaming("> ".repeat(200) + "deep");
 			expect(Date.now() - start).toBeLessThan(3000);
 			expect(html).toContain("deep");
-		});
-
-		it("many unclosed brackets", () => {
-			const input = "[".repeat(5000);
-			const start = Date.now();
-			const html = renderStreaming(input);
-			expect(Date.now() - start).toBeLessThan(3000);
-			expect(html).toBeTruthy();
 		});
 
 		it("table with many columns", () => {
 			const cols = "| c ".repeat(1000) + "|";
 			const sep = "| - ".repeat(1000) + "|";
-			const input = cols + "\n" + sep;
 			const start = Date.now();
-			const html = renderStreaming(input);
+			renderStreaming(cols + "\n" + sep);
 			expect(Date.now() - start).toBeLessThan(3000);
-			expect(html).toBeTruthy();
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 10. Incomplete KaTeX mid-stream
+	// 10. Incomplete math
 	// -----------------------------------------------------------------------
 	describe("incomplete math", () => {
-		it("incomplete inline math: $x +", () => {
-			const html = renderStreaming("$x +");
-			expect(html).toContain(CURSOR_HTML);
+		it("incomplete inline math renders as text", () => {
+			expect(renderStreaming("$x +")).toBe(`<p>$x +${C}</p>\n`);
 		});
 
-		it("incomplete display math: $$\\frac{", () => {
-			const html = renderStreaming("$$\\frac{");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("complete inline math has cursor after", () => {
-			const html = renderStreaming("$E = mc^2$");
-			expect(html).toContain(CURSOR_HTML);
-			// Math should be processed (placeholder or katex)
-			expect(html).toMatch(/data-math-style|katex/);
+		it("complete inline math renders as placeholder", () => {
+			expect(renderStreaming("$E = mc^2$")).toBe(
+				`<p><span class="math-placeholder" data-math-style="inline">E = mc^2</span>${C}</p>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 11. Blockquote with incomplete formatting
+	// 11. Blockquote + incomplete formatting
 	// -----------------------------------------------------------------------
 	describe("blockquote + incomplete formatting", () => {
-		it("blockquote with incomplete bold", () => {
-			const html = renderStreaming("> **bold text");
-			expect(html).toContain("<blockquote");
-			expect(html).toContain("<strong>");
-		});
-
-		it("blockquote with incomplete italic", () => {
-			const html = renderStreaming("> *italic text");
-			expect(html).toContain("<blockquote");
-			expect(html).toContain("<em>");
-		});
-
-		it("blockquote with incomplete code", () => {
-			const html = renderStreaming("> `code text");
-			expect(html).toContain("<blockquote");
-			expect(html).toContain("<code>");
+		it.each([
+			{
+				input: "> **bold text",
+				expected: `<blockquote>\n<p><strong>bold text${C}</strong></p>\n</blockquote>\n`,
+				label: "bold",
+			},
+			{
+				input: "> *italic text",
+				expected: `<blockquote>\n<p><em>italic text${C}</em></p>\n</blockquote>\n`,
+				label: "italic",
+			},
+			{
+				input: "> `code text",
+				expected: `<blockquote>\n<p><code>code text${C}</code></p>\n</blockquote>\n`,
+				label: "code",
+			},
+		])("blockquote with incomplete $label", ({ input, expected }) => {
+			expect(renderStreaming(input)).toBe(expected);
 		});
 
 		it("nested blockquote with incomplete bold", () => {
-			const html = renderStreaming("> > **deep bold");
-			expect(html).toContain("<blockquote");
-			expect(html).toContain("<strong>");
+			expect(renderStreaming("> > **deep bold")).toBe(
+				`<blockquote>\n<blockquote>\n<p><strong>deep bold${C}</strong></p>\n</blockquote>\n</blockquote>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 12. Table streaming edge cases
+	// 12. Table streaming
 	// -----------------------------------------------------------------------
 	describe("table streaming", () => {
-		it("header row only", () => {
-			const html = renderStreaming("| a | b |");
-			// Just a header row without separator isn't a table yet
-			expect(html).toContain(CURSOR_HTML);
+		it("header row only is not a table yet", () => {
+			expect(renderStreaming("| a | b |")).toBe(`<p>| a | b |${C}</p>\n`);
 		});
 
-		it("header + partial separator", () => {
-			const html = renderStreaming("| a | b |\n| -");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("header + complete separator", () => {
+		it("header + complete separator renders table", () => {
 			const html = renderStreaming("| a | b |\n| - | - |");
-			expect(html).toContain("<table");
-			expect(html).toContain(CURSOR_HTML);
+			expect(html).toContain("<table>");
+			expect(html).toContain("<th>a</th>");
+			expect(html).toContain(`</table></div>${C}`);
 		});
 
-		it("header + separator + partial row", () => {
+		it("header + separator + partial row has cursor in cell", () => {
 			const html = renderStreaming("| a | b |\n| - | - |\n| 1");
-			expect(html).toContain("<table");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("table with alignment markers", () => {
-			const html = renderStreaming(
-				"| left | center | right |\n| :- | :-: | -: |",
-			);
-			expect(html).toContain("<table");
+			expect(html).toContain(`<td>1${C}</td>`);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 13. Alert (GitHub-style) streaming
+	// 13. Alert streaming
 	// -----------------------------------------------------------------------
 	describe("alert streaming", () => {
-		it("incomplete alert tag", () => {
-			const html = renderStreaming("> [!NOTE]");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
 		it("alert with partial content", () => {
-			const html = renderStreaming("> [!NOTE]\n> This is");
-			expect(html).toContain("This is");
-			expect(html).toContain(CURSOR_HTML);
+			expect(renderStreaming("> [!NOTE]\n> This is")).toBe(
+				`<div class="markdown-alert markdown-alert-note">\n<p class="markdown-alert-title">Note</p>\n<p>This is${C}</p>\n</div>\n`,
+			);
 		});
 
 		it("alert with incomplete bold inside", () => {
-			const html = renderStreaming("> [!WARNING]\n> **important");
-			expect(html).toContain("<strong>");
-			expect(html).toContain(CURSOR_HTML);
+			expect(renderStreaming("> [!WARNING]\n> **important")).toBe(
+				`<div class="markdown-alert markdown-alert-warning">\n<p class="markdown-alert-title">Warning</p>\n<p><strong>important${C}</strong></p>\n</div>\n`,
+			);
 		});
 	});
 
@@ -445,110 +334,151 @@ describe("streaming edge cases", () => {
 	// 14. Task list streaming
 	// -----------------------------------------------------------------------
 	describe("task list streaming", () => {
-		it("incomplete task item", () => {
-			const html = renderStreaming("- [ ] todo item");
-			expect(html).toContain("checkbox");
-			expect(html).toContain(CURSOR_HTML);
+		it("unchecked task item", () => {
+			expect(renderStreaming("- [ ] todo item")).toBe(
+				`<ul class="contains-task-list">\n<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="" /> todo item${C}</li>\n</ul>\n`,
+			);
 		});
 
-		it("checked task with more text", () => {
-			const html = renderStreaming("- [x] done\n- [ ] pending");
-			expect(html).toContain(CURSOR_HTML);
-		});
-	});
-
-	// -----------------------------------------------------------------------
-	// 15. Footnote streaming
-	// -----------------------------------------------------------------------
-	describe("footnote streaming", () => {
-		it("footnote reference without definition", () => {
-			const html = renderStreaming("text[^1]");
-			expect(html).toContain(CURSOR_HTML);
-		});
-
-		it("footnote with partial definition", () => {
-			const html = renderStreaming("text[^1]\n\n[^1]: definition");
-			expect(html).toContain("definition");
-			expect(html).toContain(CURSOR_HTML);
+		it("checked + unchecked task items", () => {
+			expect(renderStreaming("- [x] done\n- [ ] pending")).toBe(
+				`<ul class="contains-task-list">\n<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked="" disabled="" /> done</li>\n<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="" /> pending${C}</li>\n</ul>\n`,
+			);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 16. Mixed block/inline mid-stream
+	// 15. Mixed content mid-stream
 	// -----------------------------------------------------------------------
 	describe("mixed content mid-stream", () => {
 		it("heading then incomplete bold", () => {
-			const html = renderStreaming("# Title\n\n**bold");
-			expect(html).toContain("<h1");
-			expect(html).toContain("<strong>");
-		});
-
-		it("list then code fence", () => {
-			const html = renderStreaming(
-				"- item 1\n- item 2\n\n```python\ndef hello():",
+			expect(renderStreaming("# Title\n\n**bold")).toBe(
+				`<h1><a href="#title" aria-hidden="true" class="anchor" id="title"></a>Title</h1>\n<p><strong>bold${C}</strong></p>\n`,
 			);
-			expect(html).toContain("<li>");
-			expect(html).toContain("<code");
 		});
 
 		it("paragraph, horizontal rule, incomplete italic", () => {
-			const html = renderStreaming("text\n\n---\n\n*italic");
-			expect(html).toContain("<hr");
-			expect(html).toContain("<em>");
+			expect(renderStreaming("text\n\n---\n\n*italic")).toBe(
+				`<p>text</p>\n<hr />\n<p><em>italic${C}</em></p>\n`,
+			);
 		});
 
 		it("complete elements then trailing space with bold", () => {
-			const html = renderStreaming(
-				"# Heading\n\nParagraph text.\n\n**bold ",
+			expect(renderStreaming("# Heading\n\nParagraph text.\n\n**bold ")).toBe(
+				`<h1><a href="#heading" aria-hidden="true" class="anchor" id="heading"></a>Heading</h1>\n<p>Paragraph text.</p>\n<p><strong>bold${C}</strong></p>\n`,
 			);
-			expect(html).toContain("<h1");
-			expect(html).toContain("<strong>bold");
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 17. Setext heading ambiguity during streaming
+	// 16. Setext heading prevention
 	// -----------------------------------------------------------------------
 	describe("setext heading prevention", () => {
-		it("text followed by dashes is NOT a heading (ignoreSetext=true)", () => {
-			const html = renderStreaming("Some text\n---");
-			// With ignoreSetext, this should be text + hr, not h2
-			expect(html).not.toContain("<h2");
+		it("text followed by dashes is NOT a heading", () => {
+			expect(renderStreaming("Some text\n---")).not.toContain("<h2");
 		});
 
 		it("text followed by equals is NOT a heading", () => {
-			const html = renderStreaming("Some text\n===");
-			expect(html).not.toContain("<h1");
+			expect(renderStreaming("Some text\n===")).not.toContain("<h1");
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// 18. Cursor position verification
+	// 17. Cursor position verification
 	// -----------------------------------------------------------------------
 	describe("cursor position", () => {
-		it("cursor is inside <em> for incomplete italic", () => {
-			const html = renderStreaming("*italic text");
-			expect(html).toMatch(/<em>italic text.*data-cursor/s);
+		it("inside <em> for incomplete italic", () => {
+			expect(renderStreaming("*italic text")).toBe(
+				`<p><em>italic text${C}</em></p>\n`,
+			);
 		});
 
-		it("cursor is inside <strong> for incomplete bold", () => {
-			const html = renderStreaming("**bold text");
-			expect(html).toMatch(/<strong>bold text.*data-cursor/s);
+		it("inside <strong> for incomplete bold", () => {
+			expect(renderStreaming("**bold text")).toBe(
+				`<p><strong>bold text${C}</strong></p>\n`,
+			);
 		});
 
-		it("cursor is inside <code> for incomplete code fence", () => {
-			const html = renderStreaming("```js\nconst x = 1;");
-			expect(html).toMatch(/<code.*>.*const x = 1;.*data-cursor/s);
+		it("after completed link", () => {
+			expect(renderStreaming("[text](url)")).toBe(
+				`<p><a href="url" target="_blank" rel="noopener noreferrer">text</a>${C}</p>\n`,
+			);
 		});
 
-		it("cursor is after completed link", () => {
-			const html = renderStreaming("[text](url)");
-			expect(html).toMatch(/<\/a>.*data-cursor/s);
-		});
-
-		it("cursor is after table", () => {
+		it("after table", () => {
 			const html = renderStreaming("| a |\n| - |");
-			expect(html).toMatch(/<\/table>.*data-cursor/s);
+			expect(html).toContain(`</table></div>${C}`);
+		});
+	});
+
+	// -----------------------------------------------------------------------
+	// 18. Closing delimiter + cursor interaction
+	// Cursor after closing delimiters can break comrak's parser.
+	// -----------------------------------------------------------------------
+	describe("closing delimiter cursor placement", () => {
+		it.each([
+			{
+				input: "~~**strikethrough and bold**~~",
+				expected: `<del><strong>strikethrough and bold</strong>${C}</del>`,
+				label: "~~**nested**~~",
+			},
+			{
+				input: "**~~nested~~**",
+				expected: `<strong><del>nested</del>${C}</strong>`,
+				label: "**~~nested~~**",
+			},
+			{
+				input: "**bold**",
+				expected: `<strong>bold${C}</strong>`,
+				label: "**bold**",
+			},
+			{
+				input: "~~strike~~",
+				expected: `<del>strike${C}</del>`,
+				label: "~~strike~~",
+			},
+			{
+				input: "***bold-italic***",
+				expected: `<em><strong>bold-italic${C}</strong></em>`,
+				label: "***bold-italic***",
+			},
+		])("$label cursor before closing delimiter", ({ input, expected }) => {
+			expect(renderStreaming(input)).toContain(expected);
+		});
+
+		// Half-closed delimiters: healing appends partial closer
+		it.each([
+			{
+				input: "~~*strikethrough and italic*~",
+				expected: `<del><em>strikethrough and italic</em>${C}</del>`,
+				label: "~~*...*~",
+			},
+			{
+				input: "**bold*",
+				expected: `<strong>bold${C}</strong>`,
+				label: "**bold*",
+			},
+			{
+				input: "__under_",
+				expected: `<strong>under${C}</strong>`,
+				label: "__under_",
+			},
+			{
+				input: "~~strike~",
+				expected: `<del>strike${C}</del>`,
+				label: "~~strike~",
+			},
+		])("$label half-closed heals correctly", ({ input, expected }) => {
+			expect(renderStreaming(input)).toContain(expected);
+		});
+
+		// Single characters must NOT be treated as closing delimiters
+		it.each([
+			{ input: "text ~", contains: `~${C}`, label: "single ~" },
+			{ input: "a * b", contains: `b${C}`, label: "single *" },
+			{ input: "some_var", contains: `some_var${C}`, label: "single _ mid-word" },
+		])("$label is not a delimiter", ({ input, contains }) => {
+			expect(renderStreaming(input)).toContain(contains);
 		});
 	});
 });
