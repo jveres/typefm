@@ -254,7 +254,7 @@ const COMRAK_OPTIONS = {
 		alerts: true,
 		mathDollars: true,
 		underline: false,
-		headerIds: "",
+		headerIdPrefix: "",
 		shortcodes: true,
 		descriptionLists: true,
 		footnotes: true,

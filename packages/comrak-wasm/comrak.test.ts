@@ -15,8 +15,6 @@ import {
 	mdToHtmlWithPlugins,
 	mdToHtmlWithRewriters,
 	mdToText,
-	mdToTypst,
-	mdToTypstWithPlugins,
 	mdToXml,
 	mdToXmlWithPlugins,
 	SyntaxHighlighter,
@@ -193,10 +191,32 @@ describe("extensions", () => {
 		);
 	});
 
-	test("header ids with prefix", () => {
+	test("header ids with prefix (deprecated headerIds)", () => {
 		expect(mdToHtml("# Hello", { extension: { headerIds: "sec-" } })).toContain(
 			'id="sec-hello"',
 		);
+	});
+
+	test("headerIdPrefix (new name)", () => {
+		expect(
+			mdToHtml("# Hello", { extension: { headerIdPrefix: "sec-" } }),
+		).toContain('id="sec-hello"');
+	});
+
+	test("headerIdPrefixInHref adds prefix to href", () => {
+		const html = mdToHtml("# Hello", {
+			extension: { headerIdPrefix: "sec-", headerIdPrefixInHref: true },
+		});
+		expect(html).toContain('id="sec-hello"');
+		expect(html).toContain('href="#sec-hello"');
+	});
+
+	test("headerIdPrefixInHref false keeps href without prefix", () => {
+		const html = mdToHtml("# Hello", {
+			extension: { headerIdPrefix: "sec-", headerIdPrefixInHref: false },
+		});
+		expect(html).toContain('id="sec-hello"');
+		expect(html).toContain('href="#hello"');
 	});
 
 	test("description lists", () => {
@@ -435,44 +455,6 @@ describe("xml", () => {
 });
 
 // --- Typst ---
-
-describe("typst", () => {
-	test("basic markdown", () => {
-		const typst = mdToTypst("# Hello\n\nworld", {});
-		expect(typst).toContain("Hello");
-		expect(typst).toContain("world");
-	});
-
-	test("bold and italic", () => {
-		const typst = mdToTypst("**bold** and *italic*", {});
-		expect(typst).toContain("bold");
-		expect(typst).toContain("italic");
-	});
-
-	test("code block", () => {
-		expect(mdToTypst("```rust\nfn main() {}\n```", {})).toContain("fn main()");
-	});
-
-	test("empty input", () => {
-		expect(mdToTypst("", {})).toBe("");
-	});
-
-	test("links", () => {
-		const typst = mdToTypst("[click](https://example.com)", {});
-		expect(typst).toContain("example.com");
-		expect(typst).toContain("click");
-	});
-
-	test("with syntax highlighter", () => {
-		const sh = new SyntaxHighlighter(
-			(code: string) => `HIGHLIGHTED:${code}`,
-			() => "<pre>",
-			() => "<code>",
-		);
-		const typst = mdToTypstWithPlugins("```js\nconsole.log('hi')\n```", {}, sh);
-		expect(typst).toContain("console.log");
-	});
-});
 
 // --- Codefence Renderer ---
 

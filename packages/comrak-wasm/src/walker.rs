@@ -724,7 +724,7 @@ fn walk<'a, F: Formatter>(node: &'a AstNode<'a>, out: &mut String, ctx: &mut Wal
 
         NodeValue::Raw(s) => out.push_str(s),
         NodeValue::EscapedTag(s) => out.push_str(s),
-        NodeValue::HeexBlock(_) | NodeValue::HeexInline(_) => return,
+        NodeValue::HeexBlock(_) | NodeValue::HeexInline(_) | NodeValue::BlockDirective(_) => return,
     }
 }
 

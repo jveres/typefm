@@ -5,7 +5,10 @@ export interface ExtensionOptions {
 	autolink?: boolean;
 	tasklist?: boolean;
 	superscript?: boolean;
+	/** @deprecated Use headerIdPrefix instead */
 	headerIds?: string;
+	headerIdPrefix?: string;
+	headerIdPrefixInHref?: boolean;
 	footnotes?: boolean;
 	inlineFootnotes?: boolean;
 	descriptionLists?: boolean;
@@ -96,15 +99,6 @@ export function mdToHtmlWithPlugins(
 export function mdToXml(md: string, options?: ComrakOptions): string;
 
 export function mdToXmlWithPlugins(
-	md: string,
-	options?: ComrakOptions,
-	syntaxHighlighter?: SyntaxHighlighter | null,
-	headingAdapter?: HeadingAdapter | null,
-): string;
-
-export function mdToTypst(md: string, options?: ComrakOptions): string;
-
-export function mdToTypstWithPlugins(
 	md: string,
 	options?: ComrakOptions,
 	syntaxHighlighter?: SyntaxHighlighter | null,

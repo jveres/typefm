@@ -15,8 +15,7 @@ use comrak::adapters::{
 use comrak::options::Plugins;
 use comrak::{
     markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_commonmark_xml_with_plugins,
-    markdown_to_html, markdown_to_html_with_plugins, markdown_to_typst,
-    markdown_to_typst_with_plugins, parse_document, Arena,
+    markdown_to_html, markdown_to_html_with_plugins, parse_document, Arena,
 };
 use std::sync::Arc;
 use js_sys::Function;
@@ -38,6 +37,8 @@ struct ExtensionOptions {
     tasklist: Option<bool>,
     superscript: Option<bool>,
     header_ids: Option<String>,
+    header_id_prefix: Option<String>,
+    header_id_prefix_in_href: Option<bool>,
     footnotes: Option<bool>,
     inline_footnotes: Option<bool>,
     description_lists: Option<bool>,
@@ -140,8 +141,12 @@ fn build_options(opts: ComrakOptions) -> comrak::Options<'static> {
         set_bool!(insert);
         set_bool!(phoenix_heex);
 
-        if let Some(v) = ext.header_ids {
-            options.extension.header_ids = Some(v);
+        // header_id_prefix is the new name; header_ids is kept for backward compat
+        if let Some(v) = ext.header_id_prefix.or(ext.header_ids) {
+            options.extension.header_id_prefix = Some(v);
+        }
+        if let Some(v) = ext.header_id_prefix_in_href {
+            options.extension.header_id_prefix_in_href = v;
         }
         if let Some(v) = ext.front_matter_delimiter {
             options.extension.front_matter_delimiter = Some(v);
@@ -458,34 +463,6 @@ pub fn md_to_xml_with_plugins_js(
     }
 
     markdown_to_commonmark_xml_with_plugins(md, &opts, &plugins)
-}
-
-// --- Typst output ---
-
-#[wasm_bindgen(js_name = mdToTypst)]
-pub fn md_to_typst(md: &str, options: JsValue) -> String {
-    let opts = build_options(parse_options(options));
-    markdown_to_typst(md, &opts)
-}
-
-#[wasm_bindgen(js_name = mdToTypstWithPlugins)]
-pub fn md_to_typst_with_plugins_js(
-    md: &str,
-    options: JsValue,
-    syntax_highlighter: Option<SyntaxHighlighter>,
-    heading_adapter: Option<HeadingAdapter>,
-) -> String {
-    let opts = build_options(parse_options(options));
-    let mut plugins = Plugins::default();
-
-    if let Some(ref sh) = syntax_highlighter {
-        plugins.render.codefence_syntax_highlighter = Some(sh);
-    }
-    if let Some(ref ha) = heading_adapter {
-        plugins.render.heading_adapter = Some(ha);
-    }
-
-    markdown_to_typst_with_plugins(md, &opts, &plugins)
 }
 
 // --- Codefence Renderer Adapter ---
