@@ -24,6 +24,7 @@ pub struct AnsiTheme {
     pub blockquote_border: Option<String>,
     pub thematic_break: Option<String>,
     pub list_bullet: Option<String>,
+    pub math: Option<String>,
     pub reset: Option<String>,
     pub show_urls: Option<bool>,
     pub show_markdown: Option<bool>,
@@ -54,6 +55,7 @@ impl AnsiTheme {
             blockquote_border: Some("\x1b[38;5;242m".into()),
             thematic_break: Some("\x1b[2m".into()),
             list_bullet: Some("\x1b[33m".into()),
+            math: Some("\x1b[35m".into()),
             reset: Some("\x1b[0m".into()),
             show_urls: Some(true),
             show_markdown: Some(false),
@@ -99,6 +101,7 @@ impl AnsiTheme {
             blockquote_border: merge!(blockquote_border),
             thematic_break: merge!(thematic_break),
             list_bullet: merge!(list_bullet),
+            math: merge!(math),
             reset: merge!(reset),
             show_urls: merge!(show_urls),
             show_markdown: merge!(show_markdown),
@@ -129,6 +132,7 @@ impl AnsiTheme {
             "blockquote_border" => self.blockquote_border.as_deref().unwrap_or(""),
             "thematic_break" => self.thematic_break.as_deref().unwrap_or(""),
             "list_bullet" => self.list_bullet.as_deref().unwrap_or(""),
+            "math" => self.math.as_deref().unwrap_or(""),
             "reset" => self.reset.as_deref().unwrap_or(""),
             _ => "",
         }
@@ -183,6 +187,7 @@ impl Formatter for AnsiFormatter {
             "code_block"       => out.push_str("\x1b[39m"),       // default fg
             "thematic_break" | "code_block_border" => out.push_str("\x1b[22m"), // dim off
             "list_bullet"      => out.push_str("\x1b[39m"),       // default fg
+            "math"             => out.push_str("\x1b[39m"),       // default fg
             _ => self.reset(out),
         }
     }

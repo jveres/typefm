@@ -72,7 +72,7 @@ pub trait Formatter {
         if ordered {
             let _ = write!(out, "{}.", idx);
         } else {
-            out.push('-');
+            out.push('•');
         }
         self.style_end(out, "list_bullet");
         out.push(' ');
@@ -86,7 +86,7 @@ pub trait Formatter {
             out.push(' ');
             out.push_str(if checked { "[x] " } else { "[ ] " });
         } else {
-            out.push_str(if checked { "✓ " } else { "○ " });
+            out.push_str(if checked { "☒ " } else { "☐ " });
         }
     }
 
@@ -150,14 +150,18 @@ pub trait Formatter {
     }
 
     fn math_span(&self, out: &mut String, literal: &str) {
-        self.style(out, "code");
+        self.style(out, "math");
+        if self.show_markdown() { out.push('$'); }
         out.push_str(literal);
-        self.style_end(out, "code");
+        if self.show_markdown() { out.push('$'); }
+        self.style_end(out, "math");
     }
 
     fn wiki_link(&self, out: &mut String, url: &str) {
         self.style(out, "link");
+        out.push_str("[[");
         out.push_str(url);
+        out.push_str("]]");
         self.style_end(out, "link");
     }
 
@@ -767,7 +771,8 @@ mod tests {
             code_block_border: Some("".into()), link: Some("".into()),
             link_url: Some("".into()), blockquote: Some("".into()),
             blockquote_border: Some("".into()), thematic_break: Some("".into()),
-            list_bullet: Some("".into()), heading: Some("".into()),
+            list_bullet: Some("".into()), math: Some("".into()),
+            heading: Some("".into()),
             heading_h1: Some("".into()), heading_h2: Some("".into()),
             heading_h3: Some("".into()), heading_h4: Some("".into()),
             heading_h5: Some("".into()), heading_h6: Some("".into()),
@@ -848,8 +853,8 @@ mod tests {
     // --- Lists ---
     #[test] fn unordered_always_shows_bullets() {
         let t = text("- one\n- two");
-        assert!(t.contains("- one"));
-        assert!(t.contains("- two"));
+        assert!(t.contains("• one"));
+        assert!(t.contains("• two"));
     }
     #[test] fn ordered_always_shows_numbers() {
         let t = text("1. first\n2. second");
@@ -857,18 +862,18 @@ mod tests {
         assert!(t.contains("2. second"));
     }
     #[test] fn tight_list_no_extra_spacing() {
-        assert_eq!(text("- one\n- two\n- three"), "- one\n- two\n- three");
+        assert_eq!(text("- one\n- two\n- three"), "• one\n• two\n• three");
     }
     #[test] fn nested_list_indentation() {
         let t = text("- a\n  - b\n    - c");
-        assert!(t.contains("- a"));
-        assert!(t.contains("  - b"));
+        assert!(t.contains("• a"));
+        assert!(t.contains("  • b"));
     }
     #[test] fn code_block_in_list_has_spacing_before_and_after() {
         let t = text("- Item\n\n        code\n\n- Next");
         assert!(t.contains("Item\n\n"));
         assert!(t.contains("code\n\n"));
-        assert!(t.contains("- Next"));
+        assert!(t.contains("• Next"));
     }
 
     // --- Blockquotes ---
@@ -962,12 +967,12 @@ mod tests {
     // --- Task lists ---
     #[test] fn task_list_checked_symbol() {
         let t = text("- [x] done");
-        assert!(t.contains("✓") || t.contains("[x]"));
+        assert!(t.contains("☒") || t.contains("[x]"));
         assert!(t.contains("done"));
     }
     #[test] fn task_list_unchecked_symbol() {
         let t = text("- [ ] todo");
-        assert!(t.contains("○") || t.contains("[ ]"));
+        assert!(t.contains("☐") || t.contains("[ ]"));
         assert!(t.contains("todo"));
     }
 
@@ -1047,7 +1052,7 @@ mod tests {
     #[test] fn ansi_list_bullet_styled() {
         let a = ansi("- item");
         assert!(a.contains("\x1b["));
-        assert!(a.contains("-"));
+        assert!(a.contains("•"));
     }
     #[test] fn ansi_table_border_styled() {
         let a = ansi("| a |\n|---|\n| 1 |");
