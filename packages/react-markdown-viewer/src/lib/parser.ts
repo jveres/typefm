@@ -102,9 +102,9 @@ const SELF_CLOSING_TAG_RE = /<([a-zA-Z][a-zA-Z0-9]*)\s+([^>]*)\s*\/>/gi;
 const EVENT_HANDLER_RE =
 	/(?:^|\s+)on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi;
 
-/** Regex to match dangerous URL schemes in href/src/action/formaction/data/xlink:href */
+/** Regex to match dangerous URL schemes in href/src/srcset/action/formaction/data/xlink:href */
 const DANGEROUS_URL_ATTR_RE =
-	/(?:^|\s+)(href|src|action|formaction|data|xlink:href)\s*=\s*(?:"[^"]*(?:javascript|vbscript|data|file):[^"]*"|'[^']*(?:javascript|vbscript|data|file):[^']*'|[^\s>]*(?:javascript|vbscript|data|file):[^\s>]*)/gi;
+	/(?:^|\s+)(href|src|srcset|action|formaction|data|xlink:href)\s*=\s*(?:"[^"]*(?:javascript|vbscript|data|file):[^"]*"|'[^']*(?:javascript|vbscript|data|file):[^']*'|[^\s>]*(?:javascript|vbscript|data|file):[^\s>]*)/gi;
 
 /** Regex to match style attributes with dangerous content */
 const DANGEROUS_STYLE_RE =
@@ -116,7 +116,7 @@ const DOM_CLOBBERING_RE =
 
 /** Regex to match SVG elements with dangerous content */
 const SVG_DANGEROUS_RE =
-	/<svg[^>]*>[\s\S]*?(?:<script|on[a-z]+=|javascript:)[\s\S]*?<\/svg>/gi;
+	/<svg[^>]*>[\s\S]*?(?:<script|on[a-z]+=|javascript:|attributeName\s*=\s*["']on)[\s\S]*?<\/svg>/gi;
 
 /** Pre-compiled regexes for dangerous tag removal */
 const DANGEROUS_TAG_REMOVAL_REGEXES = [...DANGEROUS_TAGS_REMOVE].map(

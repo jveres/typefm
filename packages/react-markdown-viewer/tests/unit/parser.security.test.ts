@@ -685,4 +685,175 @@ describe('parser security', () => {
       expect(result).not.toContain('onpointerover');
     });
   });
+
+  describe('task list checkbox preservation', () => {
+    it('should preserve checkbox inputs for task lists', () => {
+      const result = renderMarkdown('- [x] Done\n- [ ] Todo', false);
+      expect(result).toContain('<input');
+      expect(result).toContain('type="checkbox"');
+    });
+
+    it('should remove non-checkbox inputs', () => {
+      const result = renderMarkdown('<input type="text" value="evil">', false);
+      expect(result).not.toContain('<input');
+    });
+
+    it('should remove password inputs', () => {
+      const result = renderMarkdown('<input type="password">', false);
+      expect(result).not.toContain('<input');
+    });
+
+    it('should remove hidden inputs', () => {
+      const result = renderMarkdown('<input type="hidden" name="csrf" value="token">', false);
+      expect(result).not.toContain('<input');
+    });
+  });
+
+  describe('sanitizer bypass attempts', () => {
+    it('should handle nested event handler obfuscation', () => {
+      const result = renderMarkdown('<img src=x onerror=alert(1)//>', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should handle event handlers with newlines in value', () => {
+      const result = renderMarkdown('<img src=x onerror="aler\nt(1)">', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should handle event handlers with tab in attribute name', () => {
+      const result = renderMarkdown('<img src=x on\terror="alert(1)">', false);
+      // Tab in attribute name may break parser - ensure no executable handler
+      const hasOnError = /<img[^>]+onerror\s*=/i.test(result);
+      expect(hasOnError).toBe(false);
+    });
+
+    it('should handle multiple event handlers on same element', () => {
+      const result = renderMarkdown('<div onclick="a()" onmouseover="b()" onfocus="c()">test</div>', false);
+      expect(result).not.toContain('onclick');
+      expect(result).not.toContain('onmouseover');
+      expect(result).not.toContain('onfocus');
+    });
+
+    it('should handle event handler with entity-encoded equals sign', () => {
+      const result = renderMarkdown('<img src=x onerror&#61;"alert(1)">', false);
+      const hasExec = /<img[^>]+onerror/i.test(result);
+      expect(hasExec).toBe(false);
+    });
+
+    it('should handle srcset attribute with javascript', () => {
+      const result = renderMarkdown('<img srcset="javascript:alert(1)">', false);
+      // srcset isn't in our dangerous URL attrs but comrak escapes it
+      expect(result).not.toMatch(/srcset=["']?javascript:/i);
+    });
+
+    it('should handle formaction attribute with javascript', () => {
+      const result = renderMarkdown('<button formaction="javascript:alert(1)">click</button>', false);
+      // button tag is removed entirely
+      expect(result).not.toContain('<button');
+    });
+  });
+
+  describe('SVG advanced injection', () => {
+    it('should handle SVG animate with href', () => {
+      const result = renderMarkdown('<svg><animate href="javascript:alert(1)"/></svg>', false);
+      expect(result).not.toContain('javascript:');
+    });
+
+    it('should handle SVG set with attributeName', () => {
+      const result = renderMarkdown('<svg><set attributeName="onmouseover" to="alert(1)"/></svg>', false);
+      expect(result).not.toContain('onmouseover');
+    });
+
+    it('should handle SVG with xlink:href javascript', () => {
+      const result = renderMarkdown('<svg><a xlink:href="javascript:alert(1)">click</a></svg>', false);
+      expect(result).not.toContain('javascript:');
+    });
+  });
+
+  describe('HTML5 injection vectors', () => {
+    it('should handle details/summary with event handlers', () => {
+      const result = renderMarkdown('<details open ontoggle="alert(1)"><summary>click</summary>content</details>', false);
+      expect(result).not.toContain('ontoggle');
+    });
+
+    it('should handle video/audio with event handlers', () => {
+      const result = renderMarkdown('<video src="x" onerror="alert(1)"></video>', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should handle source element with onerror', () => {
+      const result = renderMarkdown('<video><source src="x" onerror="alert(1)"></video>', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should handle picture element with event handlers', () => {
+      const result = renderMarkdown('<picture><img src="x" onerror="alert(1)"></picture>', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should handle marquee with event handlers (legacy)', () => {
+      const result = renderMarkdown('<marquee onstart="alert(1)">text</marquee>', false);
+      expect(result).not.toContain('<marquee');
+    });
+  });
+
+  describe('CSS-based attacks', () => {
+    it('should handle style with -moz-binding', () => {
+      const result = renderMarkdown('<div style="-moz-binding:url(evil.xml)">test</div>', false);
+      if (result.includes('style=')) {
+        expect(result).not.toContain('-moz-binding');
+      }
+    });
+
+    it('should handle style with behavior (IE)', () => {
+      const result = renderMarkdown('<div style="behavior:url(evil.htc)">test</div>', false);
+      if (result.includes('style=')) {
+        expect(result).not.toContain('behavior');
+      }
+    });
+
+    it('should handle style with @import', () => {
+      const result = renderMarkdown('<div style="@import url(evil.css)">test</div>', false);
+      if (result.includes('style=')) {
+        expect(result).not.toContain('@import');
+      }
+    });
+  });
+
+  describe('markdown-specific injection', () => {
+    it('should sanitize HTML inside blockquotes', () => {
+      const result = renderMarkdown('> <script>alert(1)</script>', false);
+      expect(result).not.toMatch(/<script>/i);
+    });
+
+    it('should sanitize HTML inside list items', () => {
+      const result = renderMarkdown('- <img src=x onerror=alert(1)>', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should sanitize HTML in heading content', () => {
+      const result = renderMarkdown('# <img src=x onerror=alert(1)>', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should sanitize HTML in link text', () => {
+      const result = renderMarkdown('[<img src=x onerror=alert(1)>](https://example.com)', false);
+      expect(result).not.toContain('onerror');
+    });
+
+    it('should handle footnotes with XSS', () => {
+      const result = renderMarkdown('text[^1]\n\n[^1]: <script>alert(1)</script>', false);
+      expect(result).not.toMatch(/<script>/i);
+    });
+
+    it('should sanitize alerts with XSS content', () => {
+      const result = renderMarkdown('> [!NOTE]\n> <script>alert(1)</script>', false);
+      expect(result).not.toMatch(/<script>/i);
+    });
+
+    it('should handle description lists with XSS', () => {
+      const result = renderMarkdown('Term\n: <img src=x onerror=alert(1)>', false);
+      expect(result).not.toContain('onerror');
+    });
+  });
 });
