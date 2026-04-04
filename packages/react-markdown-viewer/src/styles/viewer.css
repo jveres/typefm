@@ -593,6 +593,21 @@
   position: relative;
   width: fit-content;
   max-width: 100%;
+  margin-bottom: 24px;
+}
+
+.markdown-viewer .markdown .table-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: -6px;
+  bottom: -6px;
+  z-index: -1;
+  border-radius: 6px;
+  background-image: url('./dotted.svg');
+  background-size: 7px 13px;
+  opacity: 0.2;
 }
 
 .markdown-viewer .markdown table {
