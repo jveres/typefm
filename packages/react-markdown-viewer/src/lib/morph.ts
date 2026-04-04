@@ -236,8 +236,17 @@ export function morphContentOptimized(container: Element, newHtml: string): bool
   // Update state for this container
   state.prevHashes = newHashes;
   state.lastStats = stats;
-  
-  return stats.updated > 0 || stats.added > 0 || stats.removed > 0;
+
+  const changed = stats.updated > 0 || stats.added > 0 || stats.removed > 0;
+
+  // Invalidate contentHash so morphContentSync doesn't skip after streaming ends.
+  // Without this, the stale hash from a previous non-streaming morph causes
+  // morphContentSync to skip the final cursor-removal morph on the 2nd stream.
+  if (changed) {
+    state.contentHash = '';
+  }
+
+  return changed;
 }
 
 /**

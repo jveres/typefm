@@ -420,6 +420,17 @@ describe('parser security', () => {
       // id should be stripped or element handled safely
       expect(result).not.toMatch(/id=["']?location["']?/i);
     });
+
+    it('should not corrupt id attributes whose values start with a dangerous name prefix', () => {
+      // Regression: DOM_CLOBBERING_RE matched "alert" as prefix of "alerts--admonitions",
+      // stripping ` id="alert` and leaving `s--admonitions"` as a malformed attribute.
+      // This caused InvalidCharacterError in idiomorph during streaming morph.
+      const result = renderMarkdown('## Alerts / Admonitions', false);
+      // The heading anchor should preserve the full id
+      expect(result).toContain('id="alerts--admonitions"');
+      // Must NOT produce the malformed attribute fragment (no space before s--)
+      expect(result).not.toMatch(/["']s--admonitions"/);
+    });
   });
 
   describe('template injection prevention', () => {

@@ -110,9 +110,11 @@ const DANGEROUS_URL_ATTR_RE =
 const DANGEROUS_STYLE_RE =
 	/(?:^|\s+)style\s*=\s*["'][^"']*(?:expression|javascript|behavior|binding|@import|url\s*\()[^"']*["']/gi;
 
-/** Regex to match DOM clobbering via name/id attributes with dangerous values */
+/** Regex to match DOM clobbering via name/id attributes with dangerous values.
+ *  Lookahead ensures the value is an EXACT match (followed by a quote, whitespace, or >),
+ *  preventing false positives like "alerts" matching the "alert" prefix. */
 const DOM_CLOBBERING_RE =
-	/(?:^|\s+)(?:name|id)\s*=\s*["']?(document|window|location|self|top|parent|frames|opener|navigator|history|screen|alert|confirm|prompt|eval|Function|constructor|prototype|__proto__|hasOwnProperty|toString|valueOf|href|src|cookie|domain)["']?/gi;
+	/(?:^|\s+)(?:name|id)\s*=\s*["']?(document|window|location|self|top|parent|frames|opener|navigator|history|screen|alert|confirm|prompt|eval|Function|constructor|prototype|__proto__|hasOwnProperty|toString|valueOf|href|src|cookie|domain)(?=["'\s>]|$)["']?/gi;
 
 /** Regex to match SVG elements with dangerous content */
 const SVG_DANGEROUS_RE =
