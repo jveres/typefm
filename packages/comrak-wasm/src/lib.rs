@@ -673,6 +673,34 @@ pub fn ansi_theme_light() -> JsValue {
     serde_wasm_bindgen::to_value(&ansi::AnsiTheme::light()).unwrap_or(JsValue::NULL)
 }
 
+/// Detect color scheme from the COLORFGBG environment variable.
+/// Returns "light" or "dark". Background values 7 or 15 indicate a light terminal.
+#[wasm_bindgen(js_name = detectColorScheme)]
+pub fn detect_color_scheme(colorfgbg: Option<String>) -> String {
+    match colorfgbg {
+        Some(ref s) => {
+            if let Some(bg) = s.rsplit(';').next() {
+                match bg.trim() {
+                    "7" | "15" => return "light".into(),
+                    _ => {}
+                }
+            }
+            "dark".into()
+        }
+        None => "dark".into(),
+    }
+}
+
+/// Auto-select dark or light theme based on COLORFGBG value.
+#[wasm_bindgen(js_name = ansiThemeAuto)]
+pub fn ansi_theme_auto(colorfgbg: Option<String>) -> JsValue {
+    if detect_color_scheme(colorfgbg) == "light" {
+        ansi_theme_light()
+    } else {
+        ansi_theme_dark()
+    }
+}
+
 // --- Frontmatter ---
 
 #[wasm_bindgen(js_name = getFrontmatter)]

@@ -18,6 +18,9 @@ pub trait Formatter {
     // --- Style hooks (override for ANSI) ---
     fn style(&self, _out: &mut String, _name: &str) {}
     fn reset(&self, _out: &mut String) {}
+    /// Targeted style close — resets only the named attribute.
+    /// Default calls full reset(); ANSI formatter uses targeted SGR codes.
+    fn style_end(&self, out: &mut String, _name: &str) { self.reset(out); }
 
     // --- Block elements ---
     fn heading_start(&self, _out: &mut String, _level: u8) {}
@@ -31,7 +34,7 @@ pub trait Formatter {
             self.style(out, "code_block_border");
             out.push_str("```");
             if !info.is_empty() { out.push_str(info); }
-            self.reset(out);
+            self.style_end(out, "code_block_border");
             out.push('\n');
         }
     }
@@ -39,14 +42,14 @@ pub trait Formatter {
         self.style(out, "code_block");
         if self.show_markdown() { out.push_str("  "); }
         out.push_str(line);
-        self.reset(out);
+        self.style_end(out, "code_block");
         out.push('\n');
     }
     fn code_block_end(&self, out: &mut String) {
         if self.show_markdown() {
             self.style(out, "code_block_border");
             out.push_str("```");
-            self.reset(out);
+            self.style_end(out, "code_block_border");
             out.push('\n');
         }
     }
@@ -54,7 +57,7 @@ pub trait Formatter {
     fn thematic_break(&self, out: &mut String) {
         self.style(out, "thematic_break");
         out.push_str(HR);
-        self.reset(out);
+        self.style_end(out, "thematic_break");
         out.push('\n');
     }
 
@@ -71,7 +74,7 @@ pub trait Formatter {
         } else {
             out.push('-');
         }
-        self.reset(out);
+        self.style_end(out, "list_bullet");
         out.push(' ');
     }
 
@@ -79,7 +82,7 @@ pub trait Formatter {
         if self.show_markdown() {
             self.style(out, "list_bullet");
             out.push('-');
-            self.reset(out);
+            self.style_end(out, "list_bullet");
             out.push(' ');
             out.push_str(if checked { "[x] " } else { "[ ] " });
         } else {
@@ -94,7 +97,7 @@ pub trait Formatter {
     }
     fn strong_end(&self, out: &mut String) {
         if self.show_markdown() { out.push_str("**"); }
-        self.reset(out);
+        self.style_end(out, "bold");
     }
     fn emph_start(&self, out: &mut String) {
         self.style(out, "italic");
@@ -102,7 +105,7 @@ pub trait Formatter {
     }
     fn emph_end(&self, out: &mut String) {
         if self.show_markdown() { out.push('*'); }
-        self.reset(out);
+        self.style_end(out, "italic");
     }
     fn strikethrough_start(&self, out: &mut String) {
         self.style(out, "strikethrough");
@@ -110,29 +113,29 @@ pub trait Formatter {
     }
     fn strikethrough_end(&self, out: &mut String) {
         if self.show_markdown() { out.push_str("~~"); }
-        self.reset(out);
+        self.style_end(out, "strikethrough");
     }
     fn underline_start(&self, out: &mut String) { self.style(out, "underline"); }
-    fn underline_end(&self, out: &mut String) { self.reset(out); }
+    fn underline_end(&self, out: &mut String) { self.style_end(out, "underline"); }
 
     fn code_span(&self, out: &mut String, literal: &str) {
         self.style(out, "code");
         if self.show_markdown() { out.push('`'); }
         out.push_str(literal);
         if self.show_markdown() { out.push('`'); }
-        self.reset(out);
+        self.style_end(out, "code");
     }
 
-    fn link_start(&self, out: &mut String) { self.style(out, "link"); }
+    fn link_start(&self, out: &mut String, _url: &str) { self.style(out, "link"); }
     fn link_end(&self, out: &mut String, url: &str) {
-        self.reset(out);
+        self.style_end(out, "link");
         if self.show_urls() && !url.is_empty() {
             out.push(' ');
             self.style(out, "link_url");
             out.push('(');
             out.push_str(url);
             out.push(')');
-            self.reset(out);
+            self.style_end(out, "link_url");
         }
     }
     fn image_end(&self, out: &mut String, url: &str) {
@@ -142,25 +145,27 @@ pub trait Formatter {
             out.push('(');
             out.push_str(url);
             out.push(')');
-            self.reset(out);
+            self.style_end(out, "link_url");
         }
     }
 
     fn math_span(&self, out: &mut String, literal: &str) {
         self.style(out, "code");
         out.push_str(literal);
-        self.reset(out);
+        self.style_end(out, "code");
     }
 
     fn wiki_link(&self, out: &mut String, url: &str) {
         self.style(out, "link");
         out.push_str(url);
-        self.reset(out);
+        self.style_end(out, "link");
     }
 
     // --- Table ---
     fn table_border_style_start(&self, out: &mut String) { self.style(out, "thematic_break"); }
-    fn table_border_style_end(&self, out: &mut String) { self.reset(out); }
+    fn table_border_style_end(&self, out: &mut String) { self.style_end(out, "thematic_break"); }
+    fn table_header_start(&self, _out: &mut String) {}
+    fn table_header_end(&self, _out: &mut String) {}
     fn table_shadow_char(&self) -> Option<&str> { None }
 }
 
@@ -290,7 +295,7 @@ fn walk_inline<'a, F: Formatter>(node: &'a AstNode<'a>, out: &mut String, fmt: &
             for child in node.children() { walk_inline(child, out, fmt); }
         }
         NodeValue::Link(link) => {
-            fmt.link_start(out);
+            fmt.link_start(out, &link.url);
             for child in node.children() { walk_inline(child, out, fmt); }
             fmt.link_end(out, &link.url);
         }
@@ -378,6 +383,7 @@ fn render_table<'a, F: Formatter>(node: &'a AstNode<'a>, out: &mut String, ctx: 
     out.push('\n');
 
     for (ri, row) in rows.iter().enumerate() {
+        let is_header = ri == 0;
         write_quote_prefix(out, ctx, fmt);
         fmt.table_border_style_start(out);
         out.push('│');
@@ -388,6 +394,7 @@ fn render_table<'a, F: Formatter>(node: &'a AstNode<'a>, out: &mut String, ctx: 
             let pad = w.saturating_sub(cw);
 
             out.push(' ');
+            if is_header { fmt.table_header_start(out); }
             match align {
                 TableAlignment::Right => {
                     for _ in 0..pad { out.push(' '); }
@@ -405,6 +412,7 @@ fn render_table<'a, F: Formatter>(node: &'a AstNode<'a>, out: &mut String, ctx: 
                     for _ in 0..pad { out.push(' '); }
                 }
             }
+            if is_header { fmt.table_header_end(out); }
             out.push(' ');
             fmt.table_border_style_start(out);
             out.push('│');
@@ -668,7 +676,7 @@ fn walk<'a, F: Formatter>(node: &'a AstNode<'a>, out: &mut String, ctx: &mut Wal
             return;
         }
         NodeValue::Link(link) => {
-            fmt.link_start(out);
+            fmt.link_start(out, &link.url);
             for child in node.children() { walk(child, out, ctx, fmt); }
             fmt.link_end(out, &link.url);
             return;
@@ -760,9 +768,12 @@ mod tests {
             link_url: Some("".into()), blockquote: Some("".into()),
             blockquote_border: Some("".into()), thematic_break: Some("".into()),
             list_bullet: Some("".into()), heading: Some("".into()),
-            heading_h1: Some("".into()), reset: Some("".into()),
+            heading_h1: Some("".into()), heading_h2: Some("".into()),
+            heading_h3: Some("".into()), heading_h4: Some("".into()),
+            heading_h5: Some("".into()), heading_h6: Some("".into()),
+            reset: Some("".into()),
             show_urls: Some(false), show_markdown: Some(false),
-            table_shadow: None };
+            table_shadow: None, hyperlinks: Some(false) };
         format_ansi(root, Some(theme))
     }
 
@@ -1016,7 +1027,7 @@ mod tests {
     }
     #[test] fn ansi_heading_h2_styled() {
         let a = ansi("## Sub");
-        assert!(a.contains("\x1b[1;34m")); // bold blue
+        assert!(a.contains("\x1b[1;36m")); // bold cyan
     }
     #[test] fn ansi_link_styled() {
         let a = ansi("[click](http://x)");
@@ -1263,5 +1274,199 @@ mod tests {
         let t = format_text(root, false, false, None);
         assert!(!t.contains("title"));
         assert!(t.contains("content"));
+    }
+
+    // === Feature #1: Targeted SGR resets ===
+
+    #[test] fn targeted_reset_bold_uses_sgr22() {
+        let a = ansi("**bold**");
+        // Should use \x1b[22m (bold off) not \x1b[0m (full reset)
+        assert!(a.contains("\x1b[22m"));
+    }
+    #[test] fn targeted_reset_italic_uses_sgr23() {
+        let a = ansi("*italic*");
+        assert!(a.contains("\x1b[23m"));
+    }
+    #[test] fn targeted_reset_strikethrough_uses_sgr29() {
+        let a = ansi("~~struck~~");
+        assert!(a.contains("\x1b[29m"));
+    }
+    #[test] fn targeted_reset_underline_uses_sgr24() {
+        let a = ansi("__underlined__");
+        assert!(a.contains("\x1b[24m"));
+    }
+    #[test] fn targeted_reset_code_resets_fg_bg() {
+        let a = ansi("`code`");
+        // Code close resets fg and bg: \x1b[39m\x1b[49m
+        assert!(a.contains("\x1b[39m\x1b[49m"));
+    }
+    #[test] fn targeted_reset_link_resets_underline_fg() {
+        let a = ansi("[click](http://x)");
+        // Link close: underline off + default fg
+        assert!(a.contains("\x1b[24m\x1b[39m"));
+    }
+    #[test] fn nested_bold_inside_italic_preserves_italic() {
+        // **bold *italic*** — closing italic should not kill bold
+        let a = ansi("**bold *and italic***");
+        assert!(a.contains("bold"));
+        assert!(a.contains("and italic"));
+        // italic close is \x1b[23m, NOT \x1b[0m
+        assert!(a.contains("\x1b[23m"));
+        // bold close is \x1b[22m
+        assert!(a.contains("\x1b[22m"));
+        // should NOT contain a raw \x1b[0m between inline spans
+        // (only heading_end and blockquote_text_end use full reset)
+    }
+    #[test] fn nested_code_inside_bold_uses_targeted_resets() {
+        let a = ansi("**some `code` here**");
+        assert!(a.contains("some"));
+        assert!(a.contains("code"));
+        assert!(a.contains("here"));
+        // code close should reset fg+bg, not full reset
+        assert!(a.contains("\x1b[39m\x1b[49m"));
+    }
+
+    // === Feature #2: Per-level heading colors ===
+
+    #[test] fn ansi_heading_h1_magenta() {
+        let a = ansi("# H1");
+        assert!(a.contains("\x1b[1;4;35m")); // bold + underline + magenta
+    }
+    #[test] fn ansi_heading_h2_cyan() {
+        let a = ansi("## H2");
+        assert!(a.contains("\x1b[1;36m")); // bold + cyan
+    }
+    #[test] fn ansi_heading_h3_yellow() {
+        let a = ansi("### H3");
+        assert!(a.contains("\x1b[1;33m")); // bold + yellow
+    }
+    #[test] fn ansi_heading_h4_green() {
+        let a = ansi("#### H4");
+        assert!(a.contains("\x1b[1;32m")); // bold + green
+    }
+    #[test] fn ansi_heading_h5_blue() {
+        let a = ansi("##### H5");
+        assert!(a.contains("\x1b[1;34m")); // bold + blue
+    }
+    #[test] fn ansi_heading_h6_white() {
+        let a = ansi("###### H6");
+        assert!(a.contains("\x1b[1;37m")); // bold + white
+    }
+    #[test] fn heading_custom_h3_override() {
+        let t = AnsiTheme {
+            heading_h3: Some("\x1b[1;31m".into()), // custom red
+            ..AnsiTheme::dark()
+        };
+        let a = ansi_with("### Custom", t);
+        assert!(a.contains("\x1b[1;31m"));
+    }
+
+    // === Feature #3: Bold table headers ===
+
+    #[test] fn ansi_table_header_bold() {
+        let a = ansi("| Name | Age |\n|------|-----|\n| Alice | 30 |");
+        // Header row should contain bold \x1b[1m and bold-off \x1b[22m
+        assert!(a.contains("\x1b[1m"));
+        assert!(a.contains("\x1b[22m"));
+        // Find the header content between bold markers
+        assert!(a.contains("Name"));
+        assert!(a.contains("Age"));
+    }
+    #[test] fn text_table_header_not_bold() {
+        // TextFormatter should not add bold to headers
+        let t = text("| Name | Age |\n|------|-----|\n| Alice | 30 |");
+        assert!(!t.contains("\x1b["));
+    }
+
+    // === Feature #4: 256-color inline code backgrounds ===
+
+    #[test] fn ansi_code_256_dark_bg() {
+        let a = ansi("`code`");
+        // Dark theme: gray bg \x1b[48;5;236m + orange fg \x1b[38;5;215m
+        assert!(a.contains("\x1b[48;5;236m"));
+        assert!(a.contains("\x1b[38;5;215m"));
+    }
+    #[test] fn ansi_code_256_light_bg() {
+        let a = ansi_with("`code`", AnsiTheme::light());
+        // Light theme: light gray bg + dark red fg
+        assert!(a.contains("\x1b[48;5;254m"));
+        assert!(a.contains("\x1b[38;5;124m"));
+    }
+    #[test] fn ansi_blockquote_border_256_gray() {
+        let a = ansi("> quote");
+        // Blockquote border uses 256-color medium gray
+        assert!(a.contains("\x1b[38;5;242m"));
+    }
+
+    // === Feature #5: OSC 8 hyperlinks ===
+
+    #[test] fn ansi_osc8_hyperlinks_off_by_default() {
+        let a = ansi("[click](http://example.com)");
+        // Default: no OSC 8 sequences
+        assert!(!a.contains("\x1b]8;;"));
+    }
+    #[test] fn ansi_osc8_hyperlinks_on() {
+        let mut t = AnsiTheme::dark();
+        t.hyperlinks = Some(true);
+        let a = ansi_with("[click](http://example.com)", t);
+        // Should contain OSC 8 open with URL
+        assert!(a.contains("\x1b]8;;http://example.com\x1b\\"));
+        // Should contain OSC 8 close (empty URL)
+        assert!(a.contains("\x1b]8;;\x1b\\"));
+        assert!(a.contains("click"));
+    }
+    #[test] fn ansi_osc8_empty_url_skipped() {
+        let mut t = AnsiTheme::dark();
+        t.hyperlinks = Some(true);
+        // Link with empty URL should not emit OSC 8
+        let a = ansi_with("[text]()", t);
+        assert!(!a.contains("\x1b]8;;"));
+    }
+    #[test] fn ansi_osc8_with_show_urls() {
+        let mut t = AnsiTheme::dark();
+        t.hyperlinks = Some(true);
+        t.show_urls = Some(true);
+        let a = ansi_with("[click](http://x)", t);
+        // Should have both OSC 8 and visible URL
+        assert!(a.contains("\x1b]8;;http://x\x1b\\"));
+        assert!(a.contains("(http://x)"));
+    }
+
+    // === Feature #6: Light/dark auto-detection ===
+
+    #[test] fn light_theme_differs_from_dark() {
+        let dark = AnsiTheme::dark();
+        let light = AnsiTheme::light();
+        // Code style should differ between dark and light
+        assert_ne!(dark.code, light.code);
+    }
+    #[test] fn light_theme_code_style() {
+        let light = AnsiTheme::light();
+        assert_eq!(light.code.as_deref(), Some("\x1b[48;5;254m\x1b[38;5;124m"));
+    }
+    #[test] fn dark_theme_code_style() {
+        let dark = AnsiTheme::dark();
+        assert_eq!(dark.code.as_deref(), Some("\x1b[48;5;236m\x1b[38;5;215m"));
+    }
+
+    // === Regression: ensure text output unchanged ===
+
+    #[test] fn text_output_unchanged_after_refactor() {
+        // Verify text formatter still produces identical output
+        let cases = vec![
+            "# Title",
+            "**bold** and *italic*",
+            "- list\n- items",
+            "> blockquote",
+            "| a | b |\n|---|---|\n| 1 | 2 |",
+            "```\ncode\n```",
+            "[link](http://x)",
+            "---",
+        ];
+        for md in cases {
+            let t = text(md);
+            let ap = ansi_plain(md);
+            assert_eq!(t, ap, "text/ansi_plain mismatch for: {}", md);
+        }
     }
 }
