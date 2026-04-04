@@ -650,8 +650,8 @@ describe("text", () => {
 	// --- Lists ---
 	test("unordered list always shows bullets", () => {
 		const text = mdToText("- one\n- two", {});
-		expect(text).toContain("- one");
-		expect(text).toContain("- two");
+		expect(text).toContain("• one");
+		expect(text).toContain("• two");
 	});
 
 	test("ordered list always shows numbers", () => {
@@ -669,12 +669,12 @@ describe("text", () => {
 		expect(text).toMatch(/Item one\n\n/);
 		// Blank line after code block
 		expect(text).toMatch(/code inside\n\n/);
-		expect(text).toContain("- Item two");
+		expect(text).toContain("• Item two");
 	});
 
 	test("simple list has no extra spacing", () => {
 		const text = mdToText("- one\n- two\n- three", {});
-		expect(text).toBe("- one\n- two\n- three");
+		expect(text).toBe("• one\n• two\n• three");
 	});
 
 	test("code block inside nested list item has blank line before and after", () => {
@@ -686,7 +686,7 @@ describe("text", () => {
 		expect(text).toMatch(/Sub-item\n\n/);
 		// Blank line after code block
 		expect(text).toMatch(/nested_code\(\)\n\n/);
-		expect(text).toContain("- Next");
+		expect(text).toContain("• Next");
 	});
 
 	test("text and ansi match for list with code block", () => {
@@ -707,7 +707,7 @@ describe("text", () => {
 
 	test("task list uses symbols by default", () => {
 		expect(mdToText("- [x] done", { extension: { tasklist: true } })).toContain(
-			"✓ done",
+			"☒ done",
 		);
 	});
 
@@ -814,7 +814,7 @@ describe("ansi", () => {
 	// --- Lists ---
 	test("unordered list always shows bullet", () => {
 		const ansi = mdToAnsi("- item", {});
-		expect(ansi).toContain("-");
+		expect(ansi).toContain("•");
 		expect(ansi).toContain("item");
 	});
 

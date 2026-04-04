@@ -9,18 +9,38 @@ pub fn heal_markdown(input: &str) -> String {
         buf.pop();
     }
 
+    // Block-level healers operate on the full text
     heal_html_tag(&mut buf);
     heal_setext(&mut buf);
     heal_links(&mut buf);
-    heal_bold_italic(&mut buf);
-    heal_bold(&mut buf);
-    heal_italic_double_underscore(&mut buf);
-    heal_italic_asterisk(&mut buf);
-    heal_italic_underscore(&mut buf);
-    heal_inline_code(&mut buf);
-    heal_strikethrough(&mut buf);
     heal_block_katex(&mut buf);
     heal_code_block(&mut buf);
+
+    // Inline formatting healers must only operate on the last paragraph.
+    // Inline formatting (bold, italic, etc.) cannot span paragraph boundaries (\n\n),
+    // so closing delimiters must be appended within the same paragraph.
+    if let Some(para_start) = buf.rfind("\n\n") {
+        let split = para_start + 2;
+        let mut last_para = buf[split..].to_string();
+        heal_bold_italic(&mut last_para);
+        heal_bold(&mut last_para);
+        heal_italic_double_underscore(&mut last_para);
+        heal_italic_asterisk(&mut last_para);
+        heal_italic_underscore(&mut last_para);
+        heal_inline_code(&mut last_para);
+        heal_strikethrough(&mut last_para);
+        buf.truncate(split);
+        buf.push_str(&last_para);
+    } else {
+        // Single paragraph — heal the whole thing
+        heal_bold_italic(&mut buf);
+        heal_bold(&mut buf);
+        heal_italic_double_underscore(&mut buf);
+        heal_italic_asterisk(&mut buf);
+        heal_italic_underscore(&mut buf);
+        heal_inline_code(&mut buf);
+        heal_strikethrough(&mut buf);
+    }
 
     buf
 }
@@ -583,5 +603,39 @@ mod tests {
     }
     #[test] fn heal_mixed_multibyte_unchanged() {
         assert_eq!(heal_markdown("café résumé naïve"), "café résumé naïve");
+    }
+
+    // --- Cross-paragraph boundary ---
+    #[test] fn heal_bold_does_not_span_paragraphs() {
+        // Opening *** in first paragraph should NOT close at end of second
+        let result = heal_markdown("***bold\n\nmore text");
+        // The *** should not appear at the very end (after "more text")
+        assert!(!result.ends_with("***"));
+        // First paragraph stays unclosed (literal ***)
+        assert!(result.starts_with("***bold"));
+    }
+    #[test] fn heal_bold_closes_in_same_paragraph() {
+        assert_eq!(heal_markdown("**bold"), "**bold**");
+    }
+    #[test] fn heal_italic_does_not_span_paragraphs() {
+        let result = heal_markdown("*italic\n\nmore text");
+        assert!(!result.ends_with("*more text*"));
+    }
+    #[test] fn heal_strikethrough_does_not_span_paragraphs() {
+        let result = heal_markdown("~~strike\n\nmore text");
+        assert!(!result.ends_with("~~"));
+    }
+    #[test] fn heal_inline_code_does_not_span_paragraphs() {
+        let result = heal_markdown("`code\n\nmore text");
+        assert!(!result.ends_with("`"));
+    }
+    #[test] fn heal_last_paragraph_still_healed() {
+        // Unclosed bold in second paragraph should be healed there
+        assert_eq!(heal_markdown("normal\n\n**bold"), "normal\n\n**bold**");
+    }
+    #[test] fn heal_code_block_still_spans_paragraphs() {
+        // Block-level constructs should still work across paragraphs
+        let result = heal_markdown("```\ncode\n\nmore code");
+        assert!(result.ends_with("\n```"));
     }
 }

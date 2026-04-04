@@ -377,7 +377,14 @@ export function renderMarkdown(
 	if (hasCursorMarker) {
 		const stripped = src.replace(CURSOR_MARKER, "");
 		const healed = healMarkdown(stripped);
-		source = insertCursorIntoHealed(stripped, healed);
+		// healMarkdown may strip a trailing single space before healing.
+		// Match that here so insertCursorIntoHealed's suffix calculation
+		// uses the same base length as the healed string.
+		const base =
+			stripped.endsWith(" ") && !stripped.endsWith("  ")
+				? stripped.slice(0, -1)
+				: stripped;
+		source = insertCursorIntoHealed(base, healed);
 	} else {
 		source = src;
 	}
