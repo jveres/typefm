@@ -117,6 +117,30 @@ describe("streaming edge cases", () => {
 	});
 
 	// -----------------------------------------------------------------------
+	// 4b. Cursor with just-opened delimiters (no content yet)
+	// -----------------------------------------------------------------------
+	describe("cursor with just-opened delimiters", () => {
+		it("cursor after opening ** with preceding text", () => {
+			// "They respond to **" → cursor should be inside <strong>, not mid-delimiter
+			expect(renderStreaming("They respond to **")).toBe(
+				`<p>They respond to <strong>${C}</strong></p>\n`,
+			);
+		});
+
+		it("cursor after opening * with preceding text", () => {
+			expect(renderStreaming("text *")).toBe(
+				`<p>text <em>${C}</em></p>\n`,
+			);
+		});
+
+		it("cursor after opening ~~", () => {
+			expect(renderStreaming("text ~~")).toBe(
+				`<p>text <del>${C}</del></p>\n`,
+			);
+		});
+	});
+
+	// -----------------------------------------------------------------------
 	// 5. List + code transitions
 	// -----------------------------------------------------------------------
 	describe("list + code transitions", () => {

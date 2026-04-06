@@ -352,6 +352,24 @@ function insertCursorIntoHealed(original: string, healed: string): string {
 	const trailingDelim = /(\*{2,3}|~{2}|_{2,3}|`+)$/.exec(fullEnd);
 	if (trailingDelim) {
 		const pos = fullEnd.length - trailingDelim[1].length;
+
+		// Guard: the regex can match across the original/suffix boundary
+		// (e.g., "to **" + "**" = "****" → regex greedily matches "***").
+		// Detect this by checking if original's trailing delimiter chars
+		// are an OPENING delimiter (preceded by whitespace or SOL).
+		// If so, cursor stays at original.length — between open and close.
+		const delimChar = original[original.length - 1];
+		if (delimChar && /[*~_`]/.test(delimChar) && pos < original.length) {
+			let runStart = original.length;
+			while (runStart > 0 && original[runStart - 1] === delimChar) {
+				runStart--;
+			}
+			const before = original[runStart - 1];
+			if (before === undefined || /\s/.test(before)) {
+				return original + CURSOR_MARKER + suffix;
+			}
+		}
+
 		return fullEnd.slice(0, pos) + CURSOR_MARKER + fullEnd.slice(pos);
 	}
 
