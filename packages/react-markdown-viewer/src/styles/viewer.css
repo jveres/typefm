@@ -393,6 +393,7 @@
   color: var(--fgColor-muted);
   cursor: pointer;
   opacity: 0;
+  will-change: opacity;
   transition:
     opacity 0.15s ease,
     background 0.15s ease,
@@ -685,6 +686,7 @@
   color: var(--fgColor-muted);
   cursor: pointer;
   opacity: 0;
+  will-change: opacity;
   transition:
     opacity 0.15s ease,
     background 0.15s ease,
