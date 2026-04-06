@@ -25,10 +25,19 @@ import {
 	initMermaid,
 	renderMermaidDiagrams,
 	updateMermaidTheme,
+	handleMermaidCopyClick,
 	mermaidStyles,
 } from "./mermaid-hook";
+import { imageGalleryContent } from "./image-gallery-content";
+import {
+	createImageGalleryHooks,
+	initImageGallery,
+	imageGalleryStyles,
+} from "./image-gallery-hook";
+import "lightgallery/css/lightgallery.css";
+import "lightgallery/css/lg-thumbnail.css";
 
-type TestCase = "showcase" | "chat" | "stress" | "edge-cases" | "deferred-loading" | "mermaid";
+type TestCase = "showcase" | "chat" | "stress" | "edge-cases" | "deferred-loading" | "mermaid" | "image-gallery";
 
 const TEST_CASES: Record<TestCase, { label: string }> = {
 	showcase: { label: "Full Showcase" },
@@ -37,6 +46,7 @@ const TEST_CASES: Record<TestCase, { label: string }> = {
 	"edge-cases": { label: "Edge Cases" },
 	"deferred-loading": { label: "Deferred Loading" },
 	mermaid: { label: "Mermaid Diagrams" },
+	"image-gallery": { label: "Image Gallery" },
 };
 
 const SPEED_OPTIONS: { value: SpeedPreset; label: string }[] = [
@@ -138,6 +148,10 @@ export function App({ dark }: { dark: boolean }) {
 	// Mermaid state
 	const mermaidContainerRef = useRef<HTMLDivElement>(null);
 
+	// Image gallery state
+	const imageGalleryContainerRef = useRef<HTMLDivElement>(null);
+	const imageGalleryHooks = useMemo(() => createImageGalleryHooks(), []);
+
 	// Chat state
 	const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 	const [streamingMessageId, setStreamingMessageId] = useState<number | null>(
@@ -193,6 +207,17 @@ export function App({ dark }: { dark: boolean }) {
 			controls.setSource(mermaidContent);
 			viewerRef.current?.reset();
 			setTimeout(() => controls.loadInstant(), 0);
+		} else if (testCase === "image-gallery") {
+			controls.setSource(imageGalleryContent);
+			viewerRef.current?.reset();
+			setTimeout(() => {
+				controls.loadInstant();
+				setTimeout(() => {
+					if (imageGalleryContainerRef.current) {
+						initImageGallery(imageGalleryContainerRef.current);
+					}
+				}, 100);
+			}, 0);
 		} else {
 			// Chat mode
 			const messages = generateChatMessages(16);
@@ -243,6 +268,14 @@ export function App({ dark }: { dark: boolean }) {
 		}
 	}, [dark]);
 
+	// Mermaid: attach copy-menu click handler
+	useEffect(() => {
+		const el = mermaidContainerRef.current;
+		if (!el || testCase !== "mermaid") return;
+		el.addEventListener("click", handleMermaidCopyClick);
+		return () => el.removeEventListener("click", handleMermaidCopyClick);
+	}, [testCase]);
+
 	// Mermaid: render diagrams after content changes
 	useEffect(() => {
 		if (testCase !== "mermaid" || !mermaidContainerRef.current) return;
@@ -268,6 +301,16 @@ export function App({ dark }: { dark: boolean }) {
 		const justFinished = wasStreamingRef.current && !state.isStreaming;
 		wasStreamingRef.current = state.isStreaming;
 
+		// Init lightGallery when image-gallery streaming completes
+		if (testCase === "image-gallery" && justFinished && imageGalleryContainerRef.current) {
+			const timer = setTimeout(() => {
+				if (imageGalleryContainerRef.current) {
+					initImageGallery(imageGalleryContainerRef.current);
+				}
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+
 		if (
 			testCase === "chat" &&
 			streamingMessageId !== null &&
@@ -292,7 +335,7 @@ export function App({ dark }: { dark: boolean }) {
 	}, [state.isStreaming, testCase]);
 
 	const handleStartStream = () => {
-		if (testCase === "showcase" || testCase === "stress" || testCase === "mermaid") {
+		if (testCase === "showcase" || testCase === "stress" || testCase === "mermaid" || testCase === "image-gallery") {
 			controls.start(true);
 			setTimeout(() => viewerRef.current?.focus(), 0);
 		} else if (testCase === "chat") {
@@ -313,8 +356,15 @@ export function App({ dark }: { dark: boolean }) {
 	};
 
 	const handleLoadInstant = () => {
-		if (testCase === "showcase" || testCase === "stress" || testCase === "mermaid") {
+		if (testCase === "showcase" || testCase === "stress" || testCase === "mermaid" || testCase === "image-gallery") {
 			controls.loadInstant();
+			if (testCase === "image-gallery") {
+				setTimeout(() => {
+					if (imageGalleryContainerRef.current) {
+						initImageGallery(imageGalleryContainerRef.current);
+					}
+				}, 100);
+			}
 		} else {
 			setDisplayedMessages(chatMessages);
 			setStreamingMessageId(null);
@@ -715,6 +765,21 @@ export function App({ dark }: { dark: boolean }) {
 							isStreaming={state.isStreaming}
 							throttleMs={50}
 						/>
+					</main>
+				) : null
+			) : testCase === "image-gallery" ? (
+				state.text || state.isStreaming ? (
+					<main className="viewer-container">
+						<style>{imageGalleryStyles}</style>
+						<div ref={imageGalleryContainerRef}>
+							<MarkdownViewer
+								ref={viewerRef}
+								text={state.text}
+								isStreaming={state.isStreaming}
+								throttleMs={50}
+								hooks={imageGalleryHooks}
+							/>
+						</div>
 					</main>
 				) : null
 			) : testCase === "showcase" || testCase === "stress" ? (
