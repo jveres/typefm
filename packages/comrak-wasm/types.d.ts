@@ -139,6 +139,11 @@ export function mdToText(
 export interface AnsiTheme {
 	heading?: string;
 	headingH1?: string;
+	headingH2?: string;
+	headingH3?: string;
+	headingH4?: string;
+	headingH5?: string;
+	headingH6?: string;
 	bold?: string;
 	italic?: string;
 	strikethrough?: string;
@@ -152,10 +157,12 @@ export interface AnsiTheme {
 	blockquoteBorder?: string;
 	thematicBreak?: string;
 	listBullet?: string;
+	math?: string;
 	reset?: string;
 	showUrls?: boolean;
 	showMarkdown?: boolean;
 	tableShadow?: string;
+	hyperlinks?: boolean;
 }
 
 export function mdToAnsi(
@@ -173,6 +180,9 @@ export function getFrontmatter(
 ): string | undefined;
 
 export function healMarkdown(md: string): string;
+
+export function detectColorScheme(colorfgbg?: string): string;
+export function ansiThemeAuto(colorfgbg?: string): AnsiTheme;
 
 export type InitInput =
 	| RequestInfo

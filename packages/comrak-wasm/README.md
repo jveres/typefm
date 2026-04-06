@@ -2,7 +2,7 @@
 
 WebAssembly bindings for [comrak](https://github.com/kivikakk/comrak) — a fast CommonMark + GFM compatible Markdown parser and renderer.
 
-Single ~930KB WASM binary. Runs in browsers, Node.js, Deno, Bun, and edge runtimes.
+Single ~900KB WASM binary. Runs in browsers, Node.js, Deno, Bun, and edge runtimes.
 
 ## Install
 
@@ -69,7 +69,7 @@ mdToHtml(md, {
     superscript: true,
     underline: true,
     spoiler: true,
-    // ... all 27 comrak extension options
+    // ... all 28 comrak extension options
   },
   parse: {
     smart: true,
@@ -198,7 +198,7 @@ const ansi = mdToAnsi(markdown, options, {
   tableShadow: "░",
 });
 
-// Preset themes (dark and light are identical — standard ANSI adapts)
+// Preset themes (light uses a distinct inline-code palette for light backgrounds)
 const dark = ansiThemeDark();
 const light = ansiThemeLight();
 ```

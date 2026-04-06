@@ -11,7 +11,6 @@ import init, {
 	mdToHtml,
 	mdToHtmlWithPlugins,
 	mdToText,
-	mdToTypst,
 	mdToXml,
 	SyntaxHighlighter,
 } from "../../pkg/comrak.js";
@@ -318,12 +317,6 @@ function render() {
 			output.className = "source";
 			output.textContent = result;
 			outputLabel.textContent = "XML";
-			break;
-		case "typst":
-			result = mdToTypst(md, opts);
-			output.className = "source";
-			output.textContent = result;
-			outputLabel.textContent = "Typst";
 			break;
 		case "text":
 			result = mdToText(
