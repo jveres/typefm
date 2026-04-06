@@ -50,7 +50,11 @@ export {
 	type InlineCodeOptions,
 } from "./lib/defaults/code-block";
 
-export { processMathBlock } from "./lib/defaults/math";
+export {
+	processMathBlock,
+	_setKaTeXLoadDelay,
+	_resetKaTeX,
+} from "./lib/defaults/math";
 
 export { processTable } from "./lib/defaults/table";
 
@@ -87,4 +91,6 @@ export {
 	isLanguageSupported,
 	getRegisteredLanguages,
 	getSupportedLanguages,
+	_setHighlighterLoadDelay,
+	_resetHighlighter,
 } from "./lib/highlighter";

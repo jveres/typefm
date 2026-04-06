@@ -252,6 +252,9 @@ export async function loadLanguage(language: string): Promise<boolean> {
   
   const loadPromise = (async () => {
     try {
+      if (_loadDelayMs > 0) {
+        await new Promise<void>(r => setTimeout(r, _loadDelayMs));
+      }
       const module = await loader();
       hljs.registerLanguage(normalized, module.default);
       registeredLanguages.add(normalized);
@@ -510,4 +513,36 @@ export function getSupportedLanguages(): string[] {
  */
 export function clearHighlightCache(): void {
   cacheManager.highlightCache.clear();
+}
+
+// --------------------------------------------------------------------------
+// Dev / Test Utilities
+// --------------------------------------------------------------------------
+
+let _loadDelayMs = 0;
+
+/**
+ * Set an artificial delay (in ms) applied before every dynamic language load.
+ * Useful for testing deferred-rendering behaviour in the playground.
+ * A value of 0 (default) disables the delay.
+ */
+export function _setHighlighterLoadDelay(ms: number): void {
+  _loadDelayMs = Math.max(0, ms);
+}
+
+/**
+ * Reset the highlighter to its initial state:
+ * unregister all languages (except plaintext), clear caches,
+ * and clear the failed/loading sets.
+ * Intended for dev/test only.
+ */
+export function _resetHighlighter(): void {
+  for (const lang of registeredLanguages) {
+    if (lang !== 'plaintext') registeredLanguages.delete(lang);
+  }
+  loadingLanguages.clear();
+  failedLanguages.clear();
+  cacheManager.highlightCache.clear();
+  cacheManager.renderCacheSync.clear();
+  cacheManager.renderCacheAsync.clear();
 }

@@ -16,26 +16,32 @@ import type { KaTeXLike } from '../../types/katex';
 let katexModule: KaTeXLike | null = null;
 let katexLoadPromise: Promise<KaTeXLike> | null = null;
 
+let _loadDelayMs = 0;
+
 /**
  * Preload KaTeX module (non-blocking).
  * Call this early to warm up the cache before math is needed.
- * 
+ *
  * @example
  * // Preload on app startup
  * preloadKaTeX();
- * 
+ *
  * // Later, math will render immediately
  * processMathBlock({ tex: 'E = mc^2', displayMode: false });
  */
 export async function preloadKaTeX(): Promise<void> {
   if (katexModule) return;
   if (!katexLoadPromise) {
-    katexLoadPromise = import('katex').then((mod) => {
+    katexLoadPromise = (async () => {
+      if (_loadDelayMs > 0) {
+        await new Promise<void>(r => setTimeout(r, _loadDelayMs));
+      }
+      const mod = await import('katex');
       // KaTeX exports renderToString both directly and on default
       const katex = (mod.default || mod) as KaTeXLike;
       katexModule = katex;
       return katex;
-    });
+    })();
   }
   await katexLoadPromise;
 }
@@ -133,4 +139,30 @@ export function processMathBlock(data: MathData): string {
     // Return placeholder on error
     return `<span class="math-placeholder" data-math-style="${displayMode ? 'display' : 'inline'}">${tex}</span>`;
   }
+}
+
+// --------------------------------------------------------------------------
+// Dev / Test Utilities
+// --------------------------------------------------------------------------
+
+/**
+ * Set an artificial delay (in ms) applied before the KaTeX dynamic import.
+ * Useful for testing deferred-rendering behaviour in the playground.
+ * A value of 0 (default) disables the delay.
+ */
+export function _setKaTeXLoadDelay(ms: number): void {
+  _loadDelayMs = Math.max(0, ms);
+}
+
+/**
+ * Reset KaTeX to its unloaded state and clear related caches.
+ * Intended for dev/test only.
+ */
+export function _resetKaTeX(): void {
+  katexModule = null;
+  katexLoadPromise = null;
+  cacheManager.katexCacheDisplay.clear();
+  cacheManager.katexCacheInline.clear();
+  cacheManager.renderCacheSync.clear();
+  cacheManager.renderCacheAsync.clear();
 }

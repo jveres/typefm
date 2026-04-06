@@ -1,5 +1,12 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { MarkdownViewer, type MarkdownViewerRef } from "../src";
+import { useState, useRef, useEffect, useMemo, useCallback, startTransition } from "react";
+import {
+	MarkdownViewer,
+	type MarkdownViewerRef,
+	_setHighlighterLoadDelay,
+	_resetHighlighter,
+	_setKaTeXLoadDelay,
+	_resetKaTeX,
+} from "../src";
 import {
 	useStreamingSimulation,
 	type SpeedPreset,
@@ -12,14 +19,24 @@ import {
 	STRESS_PRESETS,
 	type StressPreset,
 } from "./stress-content";
+import { deferredContent } from "./deferred-content";
+import { mermaidContent } from "./mermaid-content";
+import {
+	initMermaid,
+	renderMermaidDiagrams,
+	updateMermaidTheme,
+	mermaidStyles,
+} from "./mermaid-hook";
 
-type TestCase = "showcase" | "chat" | "stress" | "edge-cases";
+type TestCase = "showcase" | "chat" | "stress" | "edge-cases" | "deferred-loading" | "mermaid";
 
 const TEST_CASES: Record<TestCase, { label: string }> = {
 	showcase: { label: "Full Showcase" },
 	chat: { label: "AI Chat" },
 	stress: { label: "Stress Test (Adaptive Throttling)" },
 	"edge-cases": { label: "Edge Cases" },
+	"deferred-loading": { label: "Deferred Loading" },
+	mermaid: { label: "Mermaid Diagrams" },
 };
 
 const SPEED_OPTIONS: { value: SpeedPreset; label: string }[] = [
@@ -102,6 +119,25 @@ export function App({ dark }: { dark: boolean }) {
 	const [customMarkdown, setCustomMarkdown] = useState("");
 	const viewerRef = useRef<MarkdownViewerRef>(null);
 
+	// Deferred loading state
+	const [codeDelay, setCodeDelay] = useState(2000);
+	const [mathDelay, setMathDelay] = useState(3000);
+	const [deferredKey, setDeferredKey] = useState(0);
+
+	const handleDeferredReload = useCallback(() => {
+		// Reset async modules to unloaded state
+		_resetHighlighter();
+		_resetKaTeX();
+		// Apply configured delays
+		_setHighlighterLoadDelay(codeDelay);
+		_setKaTeXLoadDelay(mathDelay);
+		// Force remount of the viewer
+		setDeferredKey((k) => k + 1);
+	}, [codeDelay, mathDelay]);
+
+	// Mermaid state
+	const mermaidContainerRef = useRef<HTMLDivElement>(null);
+
 	// Chat state
 	const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 	const [streamingMessageId, setStreamingMessageId] = useState<number | null>(
@@ -129,6 +165,14 @@ export function App({ dark }: { dark: boolean }) {
 
 	// Set source when test case changes
 	useEffect(() => {
+		if (testCase === "deferred-loading") {
+			controls.stop();
+			controls.setSource("");
+			// Clear any previous delays
+			_setHighlighterLoadDelay(0);
+			_setKaTeXLoadDelay(0);
+			return;
+		}
 		if (testCase === "showcase") {
 			controls.setSource(sampleMarkdown);
 			viewerRef.current?.reset();
@@ -145,6 +189,10 @@ export function App({ dark }: { dark: boolean }) {
 		} else if (testCase === "edge-cases") {
 			setEdgeCaseStreaming(true);
 			viewerRef.current?.reset();
+		} else if (testCase === "mermaid") {
+			controls.setSource(mermaidContent);
+			viewerRef.current?.reset();
+			setTimeout(() => controls.loadInstant(), 0);
 		} else {
 			// Chat mode
 			const messages = generateChatMessages(16);
@@ -184,6 +232,28 @@ export function App({ dark }: { dark: boolean }) {
 		}
 	}, [edgeCaseId, testCase]);
 
+	// Mermaid: update theme (also initializes on first call)
+	useEffect(() => {
+		if (mermaidContainerRef.current) {
+			startTransition(() => {
+				updateMermaidTheme(mermaidContainerRef.current!, dark);
+			});
+		} else {
+			initMermaid(dark);
+		}
+	}, [dark]);
+
+	// Mermaid: render diagrams after content changes
+	useEffect(() => {
+		if (testCase !== "mermaid" || !mermaidContainerRef.current) return;
+		const timer = setTimeout(() => {
+			if (mermaidContainerRef.current) {
+				renderMermaidDiagrams(mermaidContainerRef.current);
+			}
+		}, 50);
+		return () => clearTimeout(timer);
+	}, [testCase, state.text]);
+
 	useEffect(() => {
 		if (chatContainerRef.current && testCase === "chat") {
 			chatContainerRef.current.scrollTop =
@@ -222,7 +292,7 @@ export function App({ dark }: { dark: boolean }) {
 	}, [state.isStreaming, testCase]);
 
 	const handleStartStream = () => {
-		if (testCase === "showcase" || testCase === "stress") {
+		if (testCase === "showcase" || testCase === "stress" || testCase === "mermaid") {
 			controls.start(true);
 			setTimeout(() => viewerRef.current?.focus(), 0);
 		} else if (testCase === "chat") {
@@ -243,7 +313,7 @@ export function App({ dark }: { dark: boolean }) {
 	};
 
 	const handleLoadInstant = () => {
-		if (testCase === "showcase" || testCase === "stress") {
+		if (testCase === "showcase" || testCase === "stress" || testCase === "mermaid") {
 			controls.loadInstant();
 		} else {
 			setDisplayedMessages(chatMessages);
@@ -304,7 +374,7 @@ export function App({ dark }: { dark: boolean }) {
 					</label>
 				</div>
 
-				{testCase === "edge-cases" ? (
+				{testCase === "deferred-loading" ? null : testCase === "edge-cases" ? (
 					<div className="controls-row edge-case-controls">
 						<label className="control-group">
 							<span>Edge Case:</span>
@@ -465,7 +535,7 @@ export function App({ dark }: { dark: boolean }) {
 					</>
 				)}
 
-				{testCase !== "edge-cases" && (
+				{testCase !== "edge-cases" && testCase !== "deferred-loading" && (
 					<div className="status-bar">
 						<div className="status-item">
 							<span className="status-label">Status:</span>
@@ -519,7 +589,69 @@ export function App({ dark }: { dark: boolean }) {
 				)}
 			</div>
 
-			{testCase === "edge-cases" ? (
+			{testCase === "deferred-loading" ? (
+				<>
+					<div className="controls">
+						<div className="controls-row">
+							<label className="control-group">
+								<span>Code highlight delay:</span>
+								<input
+									type="range"
+									min={0}
+									max={10000}
+									step={250}
+									value={codeDelay}
+									onChange={(e) =>
+										setCodeDelay(
+											Number(e.target.value),
+										)
+									}
+								/>
+								<span className="range-value">
+									{codeDelay >= 1000
+										? `${(codeDelay / 1000).toFixed(1)}s`
+										: `${codeDelay}ms`}
+								</span>
+							</label>
+							<label className="control-group">
+								<span>KaTeX delay:</span>
+								<input
+									type="range"
+									min={0}
+									max={10000}
+									step={250}
+									value={mathDelay}
+									onChange={(e) =>
+										setMathDelay(
+											Number(e.target.value),
+										)
+									}
+								/>
+								<span className="range-value">
+									{mathDelay >= 1000
+										? `${(mathDelay / 1000).toFixed(1)}s`
+										: `${mathDelay}ms`}
+								</span>
+							</label>
+							<button
+								type="button"
+								className="btn btn-primary"
+								onClick={handleDeferredReload}
+							>
+								Reload with delays
+							</button>
+						</div>
+					</div>
+					<main className="viewer-container">
+						<MarkdownViewer
+							key={deferredKey}
+							text={deferredContent}
+							isStreaming={false}
+							throttleMs={50}
+						/>
+					</main>
+				</>
+			) : testCase === "edge-cases" ? (
 				<div className="edge-case-layout">
 					<div className="edge-case-info">
 						<div className="edge-case-info-header">
@@ -573,6 +705,18 @@ export function App({ dark }: { dark: boolean }) {
 						</div>
 					</div>
 				</div>
+			) : testCase === "mermaid" ? (
+				state.text || state.isStreaming ? (
+					<main className="viewer-container" ref={mermaidContainerRef}>
+						<style>{mermaidStyles}</style>
+						<MarkdownViewer
+							ref={viewerRef}
+							text={state.text}
+							isStreaming={state.isStreaming}
+							throttleMs={50}
+						/>
+					</main>
+				) : null
 			) : testCase === "showcase" || testCase === "stress" ? (
 				state.text || state.isStreaming ? (
 					<main className="viewer-container">

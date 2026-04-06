@@ -148,6 +148,12 @@
   cursor: pointer;
 }
 
+.range-value {
+  min-width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .control-group.checkbox {
   gap: 0.375rem;
 }
