@@ -55,14 +55,14 @@ Override on `.markdown-viewer` to customize:
 
 ## Style Files
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `viewer.css` | 975 | Core layout, typography, dark mode, cursor animation |
-| `hljs.css` | 332 | Prettylights syntax highlighting theme (light + dark) |
-| `alerts.css` | 294 | GitHub-style alerts (NOTE, TIP, WARNING, CAUTION, IMPORTANT) |
-| `katex.css` | 74 | Math rendering adjustments |
-| `index.css` | 17 | Import manifest |
-| `dotted.svg` | — | Table shadow dot pattern |
+| File | Purpose |
+|------|---------|
+| `viewer.css` | Core layout, typography, dark mode, cursor animation, copy menus |
+| `hljs.css` | Prettylights syntax highlighting theme (light + dark) |
+| `alerts.css` | GitHub-style alerts (NOTE, TIP, WARNING, CAUTION, IMPORTANT) |
+| `katex.css` | Math rendering adjustments |
+| `index.css` | Import manifest |
+| `dotted.svg` | Table shadow dot pattern |
 
 ## Importing Styles
 

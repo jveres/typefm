@@ -1,6 +1,6 @@
 {
 	"name": "@typefm/react-markdown-viewer",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "High-performance React component for rendering markdown with streaming support, optimized for LLM chat interfaces",
 	"license": "MIT",
 	"sideEffects": false,

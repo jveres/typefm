@@ -10,7 +10,7 @@ The sanitization pipeline has 7 layers, applied in order after comrak generates 
 
 ### Layer 1: Comrak Tagfilter
 
-Comrak's built-in `tagfilter` extension escapes 9 dangerous HTML tags by converting `<` to `&lt;`:
+Comrak's built-in `tagfilter` extension escapes dangerous HTML tags by converting `<` to `&lt;`:
 
 `<script>`, `<style>`, `<title>`, `<textarea>`, `<xmp>`, `<iframe>`, `<noembed>`, `<noframes>`, `<plaintext>`
 

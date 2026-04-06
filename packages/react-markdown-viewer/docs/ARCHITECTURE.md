@@ -131,7 +131,7 @@ const hooks: RenderHooks = {
 
 - **Return `string`** — direct HTML insertion (fast)
 - **Return `null`** — use default processor
-- **12 element hooks** + 1 final `onRender` transform
+- Per-element hooks (`onCodeBlock`, `onTable`, `onImage`, …) + a final `onRender` transform
 
 ## Lazy Loading
 
@@ -165,7 +165,8 @@ src/
 │   └── defaults/
 │       ├── code-block.ts       Syntax highlighting + copy button
 │       ├── math.ts             KaTeX lazy loading
-│       ├── table.ts            Table wrapping
+│       ├── table.ts            Table wrapper + copy menu
+│       ├── table-helpers.ts    Table copy format converters (CSV, TSV, Markdown, HTML)
 │       ├── link.ts             Link security
 │       └── image.ts            Image lazy loading
 └── styles/

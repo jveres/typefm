@@ -192,7 +192,7 @@ pnpm dev
 
 The playground includes:
 
-- **Playground** — Full showcase, AI chat simulation, stress test, edge cases with custom markdown input
+- **Playground** — Full showcase, AI chat simulation, stress test, edge cases, deferred loading, mermaid diagrams, image gallery
 - **GitHub Comparison** — Side-by-side rendering comparison with GitHub's Markdown API
 
 ## Testing
