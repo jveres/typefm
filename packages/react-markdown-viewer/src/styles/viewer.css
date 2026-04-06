@@ -662,6 +662,125 @@
 }
 
 /* ============================================
+   Table Copy Menu
+   ============================================ */
+
+/* Container – positioned top-right of table-wrapper */
+.markdown-viewer .markdown .table-copy-menu {
+  position: absolute;
+  top: var(--base-size-8);
+  right: var(--base-size-8);
+  z-index: 2;
+}
+
+/* Trigger button – hidden by default, shown on wrapper hover */
+.markdown-viewer .markdown .table-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: var(--base-size-4);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  background: var(--bgColor-default);
+  color: var(--fgColor-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.markdown-viewer .markdown .table-wrapper:hover .table-copy-btn {
+  opacity: 1;
+}
+
+.markdown-viewer .markdown .table-copy-btn:hover {
+  background: var(--bgColor-muted);
+  color: var(--fgColor-default);
+}
+
+.markdown-viewer .markdown .table-copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* Icon state: default shows copy + chevron */
+.markdown-viewer .markdown .table-copy-btn .copy-icon,
+.markdown-viewer .markdown .table-copy-btn .check-icon,
+.markdown-viewer .markdown .table-copy-btn .chevron-icon {
+  flex-shrink: 0;
+}
+
+.markdown-viewer .markdown .table-copy-btn .check-icon {
+  display: none;
+}
+
+/* Icon state: copied shows check, hides copy + chevron */
+.markdown-viewer .markdown .table-copy-menu.copied .table-copy-btn .copy-icon {
+  display: none;
+}
+
+.markdown-viewer .markdown .table-copy-menu.copied .table-copy-btn .chevron-icon {
+  display: none;
+}
+
+.markdown-viewer .markdown .table-copy-menu.copied .table-copy-btn .check-icon {
+  display: block;
+  color: #22c55e;
+}
+
+.markdown-viewer .markdown .table-copy-menu.copied .table-copy-btn {
+  opacity: 1;
+}
+
+/* Dropdown panel – hidden until .open */
+.markdown-viewer .markdown .table-copy-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 110px;
+  padding: 4px;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 8px;
+  background: var(--bgColor-default);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  flex-direction: column;
+}
+
+.markdown-viewer .markdown .table-copy-menu.open .table-copy-dropdown {
+  display: flex;
+}
+
+.markdown-viewer .markdown .table-copy-menu.open .table-copy-btn {
+  opacity: 1;
+}
+
+/* Dropdown items */
+.markdown-viewer .markdown .table-copy-option {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--fgColor-default);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.markdown-viewer .markdown .table-copy-option:hover {
+  background: var(--bgColor-muted);
+}
+
+.markdown-viewer .markdown .table-copy-option:active {
+  background: var(--borderColor-default);
+}
+
+/* ============================================
    Details/Summary (Collapsible)
    ============================================ */
 .markdown-viewer .markdown details,

@@ -31,6 +31,13 @@ import {
 	initMarkdownViewer,
 	onWasmReady,
 } from "./lib/wasm-init";
+import {
+	extractTableDataFromElement,
+	tableDataToCSV,
+	tableDataToTSV,
+	tableDataToMarkdown,
+	tableDataToHTML,
+} from "./lib/defaults/table-helpers";
 
 export interface UseMarkdownViewerOptions {
 	text: string;
@@ -362,32 +369,134 @@ export function useMarkdownViewer({
 		}
 	}, [text, isStreaming, getEffectiveThrottleMs, applyMorph]);
 
-	// Handle copy button clicks
-	const handleClick = useCallback((event: React.MouseEvent) => {
-		const target = event.target as HTMLElement;
-		const copyBtn = target.closest(".copy-btn") as HTMLButtonElement | null;
-		if (!copyBtn) return;
+	// Mark element as "copied" for 2 s, then revert
+	const showCopied = useCallback(
+		(el: Element) => {
+			el.classList.add("copied");
+			const timeoutId = window.setTimeout(() => {
+				el.classList.remove("copied");
+				copyTimeoutIdsRef.current.delete(timeoutId);
+			}, 2000);
+			copyTimeoutIdsRef.current.add(timeoutId);
+		},
+		[],
+	);
 
-		const wrapper = copyBtn.closest(".code-block-wrapper");
-		const codeElement = wrapper?.querySelector("pre code");
-		if (!codeElement) return;
-
-		const code = codeElement.textContent ?? "";
-
-		navigator.clipboard
-			.writeText(code)
-			.then(() => {
-				copyBtn.classList.add("copied");
-				const timeoutId = window.setTimeout(() => {
-					copyBtn.classList.remove("copied");
-					copyTimeoutIdsRef.current.delete(timeoutId);
-				}, 2000);
-				copyTimeoutIdsRef.current.add(timeoutId);
-			})
-			.catch((err) => {
-				console.error("Failed to copy code:", err);
+	// Close every open table-copy dropdown (optionally skip one)
+	const closeTableMenus = useCallback(
+		(except?: Element | null) => {
+			const container = containerRef.current;
+			if (!container?.querySelector(".table-copy-menu.open")) return;
+			container.querySelectorAll(".table-copy-menu.open").forEach((m) => {
+				if (m !== except) m.classList.remove("open");
 			});
-	}, []);
+		},
+		[],
+	);
+
+	// Handle copy button clicks (code blocks + table copy menu)
+	const handleClick = useCallback(
+		(event: React.MouseEvent) => {
+			const target = event.target as HTMLElement;
+
+			// ── Code block copy button ──────────────────────────────
+			const copyBtn = target.closest(
+				".code-block-wrapper .copy-btn",
+			) as HTMLButtonElement | null;
+			if (copyBtn) {
+				const codeElement = copyBtn
+					.closest(".code-block-wrapper")
+					?.querySelector("pre code");
+				if (!codeElement) return;
+
+				navigator.clipboard
+					.writeText(codeElement.textContent ?? "")
+					.then(() => showCopied(copyBtn))
+					.catch((err) =>
+						console.error("Failed to copy code:", err),
+					);
+				return;
+			}
+
+			// ── Table copy – dropdown option ────────────────────────
+			const option = target.closest(
+				".table-copy-option",
+			) as HTMLButtonElement | null;
+			if (option) {
+				const format = option.dataset.format;
+				const menu = option.closest(".table-copy-menu");
+				const table = menu
+					?.closest(".table-wrapper")
+					?.querySelector("table") as HTMLTableElement | null;
+				if (!table || !menu) return;
+
+				const data = extractTableDataFromElement(table);
+
+				const done = () => {
+					menu.classList.remove("open");
+					showCopied(menu);
+				};
+				const fail = (err: unknown) =>
+					console.error("Failed to copy table:", err);
+
+				if (format === "html") {
+					// Dual-MIME: rich paste into Word/Docs, plain TSV fallback
+					const htmlBlob = new Blob(
+						[tableDataToHTML(data)],
+						{ type: "text/html" },
+					);
+					const textBlob = new Blob(
+						[tableDataToTSV(data)],
+						{ type: "text/plain" },
+					);
+					navigator.clipboard
+						.write([
+							new ClipboardItem({
+								"text/html": htmlBlob,
+								"text/plain": textBlob,
+							}),
+						])
+						.then(done)
+						.catch(fail);
+				} else {
+					let text: string;
+					switch (format) {
+						case "csv":
+							text = tableDataToCSV(data);
+							break;
+						case "tsv":
+							text = tableDataToTSV(data);
+							break;
+						case "markdown":
+							text = tableDataToMarkdown(data);
+							break;
+						default:
+							return;
+					}
+					navigator.clipboard
+						.writeText(text)
+						.then(done)
+						.catch(fail);
+				}
+				return;
+			}
+
+			// ── Table copy – toggle dropdown button ─────────────────
+			const tableCopyBtn = target.closest(
+				".table-copy-btn",
+			) as HTMLButtonElement | null;
+			if (tableCopyBtn) {
+				const menu = tableCopyBtn.closest(".table-copy-menu");
+				closeTableMenus(menu);
+				menu?.classList.toggle("open");
+				return;
+			}
+
+			// ── Any other click – close open table menus ────────────
+			closeTableMenus();
+		},
+		[showCopied, closeTableMenus],
+	);
 
 	// Reset component state
 	const reset = useCallback(() => {

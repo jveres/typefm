@@ -24,6 +24,14 @@ import {
   ensureKaTeXLoading,
 } from '../../src/lib/defaults/math';
 import { processImage } from '../../src/lib/defaults/image';
+import { processTable } from '../../src/lib/defaults/table';
+import {
+  tableDataToCSV,
+  tableDataToTSV,
+  tableDataToMarkdown,
+  tableDataToHTML,
+  type TableCopyData,
+} from '../../src/lib/defaults/table-helpers';
 
 describe('Default Link Processor', () => {
   describe('isDangerousUrl', () => {
@@ -529,6 +537,238 @@ describe('Default Image Processor', () => {
       expect(result).toContain('loading="lazy"');
       expect(result).toContain('class="gallery-img"');
       expect(result).toContain('title="Title"');
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Table Processor
+// ---------------------------------------------------------------------------
+
+describe('Default Table Processor', () => {
+  it('wraps table in table-wrapper', () => {
+    const html = processTable({ html: '<table><tr><td>A</td></tr></table>' });
+    expect(html).toContain('class="table-wrapper"');
+  });
+
+  it('includes copy menu with morph-ignore', () => {
+    const html = processTable({ html: '<table></table>' });
+    expect(html).toContain('class="table-copy-menu"');
+    expect(html).toContain('data-morph-ignore="true"');
+  });
+
+  it('includes copy button with icons', () => {
+    const html = processTable({ html: '<table></table>' });
+    expect(html).toContain('class="table-copy-btn"');
+    expect(html).toContain('aria-label="Copy table"');
+    expect(html).toContain('class="copy-icon"');
+    expect(html).toContain('class="check-icon"');
+    expect(html).toContain('class="chevron-icon"');
+  });
+
+  it('includes dropdown with format options', () => {
+    const html = processTable({ html: '<table></table>' });
+    expect(html).toContain('class="table-copy-dropdown"');
+    expect(html).toContain('data-format="csv"');
+    expect(html).toContain('data-format="tsv"');
+    expect(html).toContain('data-format="markdown"');
+    expect(html).toContain('data-format="html"');
+  });
+
+  it('preserves original table HTML', () => {
+    const tableHtml = '<table><thead><tr><th>X</th></tr></thead></table>';
+    const html = processTable({ html: tableHtml });
+    expect(html).toContain(tableHtml);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Table Copy Helpers (pure – no DOM)
+// ---------------------------------------------------------------------------
+
+describe('Table Copy Helpers (pure)', () => {
+  describe('tableDataToCSV', () => {
+    it('generates simple CSV', () => {
+      const data: TableCopyData = {
+        headers: ['A', 'B'],
+        rows: [['1', '2']],
+        alignments: ['none', 'none'],
+      };
+      expect(tableDataToCSV(data)).toBe('A,B\n1,2');
+    });
+
+    it('escapes values containing commas', () => {
+      const data: TableCopyData = {
+        headers: ['Description'],
+        rows: [['Item, with comma']],
+        alignments: ['none'],
+      };
+      expect(tableDataToCSV(data)).toBe('Description\n"Item, with comma"');
+    });
+
+    it('escapes values containing quotes', () => {
+      const data: TableCopyData = {
+        headers: ['Quote'],
+        rows: [['He said "Hello"']],
+        alignments: ['none'],
+      };
+      expect(tableDataToCSV(data)).toBe('Quote\n"He said ""Hello"""');
+    });
+
+    it('escapes values containing newlines', () => {
+      const data: TableCopyData = {
+        headers: ['Multi\nLine'],
+        rows: [['Line 1\nLine 2']],
+        alignments: ['none'],
+      };
+      expect(tableDataToCSV(data)).toBe('"Multi\nLine"\n"Line 1\nLine 2"');
+    });
+
+    it('omits header row when headers are empty', () => {
+      const data: TableCopyData = {
+        headers: [],
+        rows: [['x', 'y']],
+        alignments: ['none', 'none'],
+      };
+      expect(tableDataToCSV(data)).toBe('x,y');
+    });
+  });
+
+  describe('tableDataToTSV', () => {
+    it('generates simple TSV', () => {
+      const data: TableCopyData = {
+        headers: ['A', 'B'],
+        rows: [['1', '2']],
+        alignments: ['none', 'none'],
+      };
+      expect(tableDataToTSV(data)).toBe('A\tB\n1\t2');
+    });
+
+    it('escapes tabs and newlines', () => {
+      const data: TableCopyData = {
+        headers: ['Header'],
+        rows: [['Col\t1', 'Line\nBreak']],
+        alignments: ['none', 'none'],
+      };
+      const result = tableDataToTSV(data);
+      expect(result).toContain('Col\\t1');
+      expect(result).toContain('Line\\nBreak');
+    });
+
+    it('escapes carriage returns', () => {
+      const data: TableCopyData = {
+        headers: [],
+        rows: [['CR\rhere']],
+        alignments: ['none'],
+      };
+      expect(tableDataToTSV(data)).toBe('CR\\rhere');
+    });
+  });
+
+  describe('tableDataToMarkdown', () => {
+    it('generates a standard GFM table', () => {
+      const data: TableCopyData = {
+        headers: ['H1', 'H2'],
+        rows: [['R1C1', 'R1C2']],
+        alignments: ['none', 'none'],
+      };
+      const lines = tableDataToMarkdown(data).split('\n');
+      expect(lines[0]).toBe('| H1 | H2 |');
+      expect(lines[1]).toBe('| --- | --- |');
+      expect(lines[2]).toBe('| R1C1 | R1C2 |');
+    });
+
+    it('generates GFM alignment indicators', () => {
+      const data: TableCopyData = {
+        headers: ['L', 'C', 'R', 'N'],
+        rows: [],
+        alignments: ['left', 'center', 'right', 'none'],
+      };
+      const lines = tableDataToMarkdown(data).split('\n');
+      expect(lines[1]).toBe('| :--- | :---: | ---: | --- |');
+    });
+
+    it('returns empty string when headers are empty', () => {
+      const data: TableCopyData = {
+        headers: [],
+        rows: [['Data']],
+        alignments: [],
+      };
+      expect(tableDataToMarkdown(data)).toBe('');
+    });
+
+    it('escapes pipes and backslashes in cells', () => {
+      const data: TableCopyData = {
+        headers: ['Pipe | Header'],
+        rows: [['C:\\Path']],
+        alignments: ['none'],
+      };
+      const result = tableDataToMarkdown(data);
+      expect(result).toContain('| Pipe \\| Header |');
+      expect(result).toContain('| C:\\\\Path |');
+    });
+
+    it('pads rows shorter than headers', () => {
+      const data: TableCopyData = {
+        headers: ['A', 'B', 'C'],
+        rows: [['1']],
+        alignments: ['none', 'none', 'none'],
+      };
+      const lastLine = tableDataToMarkdown(data).split('\n').pop();
+      expect(lastLine).toBe('| 1 |  |  |');
+    });
+  });
+
+  describe('tableDataToHTML', () => {
+    it('generates valid table HTML string', () => {
+      const data: TableCopyData = {
+        headers: ['A'],
+        rows: [['B']],
+        alignments: ['center'],
+      };
+
+      const html = tableDataToHTML(data);
+      expect(html).toContain('<table>');
+      expect(html).toContain('<thead>');
+      expect(html).toContain('<tbody>');
+      expect(html).toContain('style="text-align: center;"');
+    });
+
+    it('omits style for "none" alignment', () => {
+      const data: TableCopyData = {
+        headers: ['N'],
+        rows: [],
+        alignments: ['none'],
+      };
+
+      const html = tableDataToHTML(data);
+      expect(html).toContain('<th>N</th>');
+      expect(html).not.toContain('style=');
+    });
+
+    it('omits thead when headers are empty', () => {
+      const data: TableCopyData = {
+        headers: [],
+        rows: [['Data']],
+        alignments: ['none'],
+      };
+
+      const html = tableDataToHTML(data);
+      expect(html).not.toContain('<thead>');
+      expect(html).toContain('<tbody>');
+    });
+
+    it('escapes HTML entities in cell content', () => {
+      const data: TableCopyData = {
+        headers: ['Expression'],
+        rows: [['a < b & c > d']],
+        alignments: ['none'],
+      };
+
+      const html = tableDataToHTML(data);
+      expect(html).toContain('&lt;');
+      expect(html).toContain('&amp;');
+      expect(html).toContain('&gt;');
     });
   });
 });

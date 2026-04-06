@@ -55,6 +55,16 @@ export { processMathBlock } from "./lib/defaults/math";
 export { processTable } from "./lib/defaults/table";
 
 export {
+	extractTableDataFromElement,
+	tableDataToCSV,
+	tableDataToTSV,
+	tableDataToMarkdown,
+	tableDataToHTML,
+	type TableCopyData,
+	type TableColumnAlignment,
+} from "./lib/defaults/table-helpers";
+
+export {
 	processLink,
 	isDangerousUrl,
 	isExternalUrl,
